@@ -1,27 +1,26 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[2]:
-
-
 import itk
 import numpy as np
 from sys import argv
-
-
-# In[3]:
 
 
 def registration_reader (fixed_image_filename, moving_image_filename):
     """This function load 2 images from their path and return 2 ITK objects.
         
         Args:
-            fixed_image_filename
-            moving_image_filename
+        
+            fixed_image_filename : string
+                        Filename of the fixed image
+                                
+            moving_image_filename : string
+                        Filename of the moving image
             
         Returns:
-            fixed_image
-            moving_image
+        
+            fixed_image : itk.F object
+                        The fixed image
+                        
+            moving_image : itk.F object
+                        The moving image
     """
     
     
@@ -33,80 +32,85 @@ def registration_reader (fixed_image_filename, moving_image_filename):
     
 
 
-# In[7]:
-
-
 def elastix_registration(fixed_image, moving_image):
     """This function do the registration of a moving image over a fixed image.
     
     Args:
-        fixed_image
-        moving_image
+    
+        fixed_image : itk.F object 
+                    Image over the registration have to be done
+                    
+        moving_image : itk.F object
+                    Image that has to be registered
         
     Returns:
-        registered_moving_image
-        final_transform_parameters
+        result_image : elastix object
+                    Resulting registered image   
+                   
+        result_transform_parameters : elastix object
+                    Resulting transform parameters 
     
     """
     
-    parameter_object = itk.ParameterObject.New()
-    default_rigid_parameter_map = parameter_object.GetDefaultParameterMap('rigid')
-    parameter_object.AddParameterMap(default_rigid_parameter_map)
+    #This registration will be done using 3 different typer of transformation in subsequent order
     
-    result_image, result_transform_parameters = itk.elastix_registration_method(
+    # Setting our number of resolutions
+    parameter_object = itk.ParameterObject.New()
+    resolutions = 4
+    
+    #Import RIGID parameter map
+    parameter_map_rigid = parameter_object.GetDefaultParameterMap('rigid', resolutions)
+    parameter_map_rigid['Metric']       = ['AdvancedMattesMutualInformation']
+    parameter_map_rigid['Interpolator'] = ['BSplineInterpolatorFloat']
+    
+    parameter_object.AddParameterMap(parameter_map_rigid)
+    
+    
+    #Adding an AFFINE parameter map
+    parameter_map_affine = parameter_object.GetDefaultParameterMap("affine", resolutions)
+    parameter_map_affine['Metric']      = ['AdvancedMattesMutualInformation']
+    parameter_map_affine['Interpolator'] = ['BSplineInterpolatorFloat']
+
+    parameter_object.AddParameterMap(parameter_map_affine)
+    
+    
+    #Adding a NON-RIGID parameter map
+    parameter_map_bspline = parameter_object.GetDefaultParameterMap("bspline", resolutions)
+    parameter_map_bspline['Metric']      = ['AdvancedMattesMutualInformation']
+    parameter_map_bspline['Interpolator'] = ['BSplineInterpolatorFloat']
+    parameter_object.AddParameterMap(parameter_map_bspline)
+    
+    
+    #Now we start the registration
+    registered_image, result_transform_parameters = itk.elastix_registration_method(
     fixed_image, moving_image,
-    parameter_object=parameter_object,
-    log_to_console=False)
+    parameter_object = parameter_object,
+    log_to_console = False)
     
     print("The Registration is done!")
     
-    return result_image, result_transform_parameters
+    #Beacuse the registration is done on a downsampled image, we apply the final transformation on the original moving image
+    result_moving_image = itk.transformix_filter(moving_image, result_transform_parameters)
+    
+    return result_moving_image, result_transform_parameters
 
-
-# In[5]:
 
 
 def registration_writer(image, file_path):
-    itk.imwrite(image, file_path+"/registered_image.nii")
+    
+    """This save an itk image as a nifti image as "output_image.nii".
+        
+        Args:
+        
+            image : itk object
+                The image that has to be written
+                
+            file_path : string
+                Path where the image will be saved
+    """
+    itk.imwrite(image, file_path+"/output_image.nii")
     print("Your file is written!")
 
-
-# In[9]:
-
-
-import tkinter as tk #serve per apire una finestra di dialogo per parire un determinato file
-from tkinter import filedialog
-
-
-#questi comandi inizializzano tkinter
-root = tk.Tk()
-root.withdraw()
-
-#Fixed Image
-#questo comando apre la finestra di dialogo e mi permette di scegliere il percorso del file
-fixed_image_filename = filedialog.askopenfilename(title = "Select the fixed image")
-
-#Moving Image
-moving_image_filename = filedialog.askopenfilename(title = "Select the moving image")
-
-#Where to save the registered image
-output_filepath = filedialog.askdirectory(title = "Select where do you want to save the new image")
-
-
-# In[11]:
-
-
-fixed_image, moving_image = registration_reader(fixed_image_filename, moving_image_filename)
-registered_image, registration_parameters = elastix_registration(fixed_image, moving_image)
-
-
-# In[12]:
-
-
-registration_writer(registered_image, output_filepath)
-
-
-# In[ ]:
 
 
 
