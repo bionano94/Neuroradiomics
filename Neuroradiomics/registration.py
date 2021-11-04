@@ -1,7 +1,17 @@
-import itk
-import numpy as np
-from sys import argv
+#!/usr/bin/env python
 
+
+
+import itk
+
+#This is useful for the Graphical_Setter function
+import tkinter as tk
+from tkinter import filedialog
+
+
+###############################################################################
+
+#IMAGE READER
 
 def registration_reader (fixed_image_filename, moving_image_filename):
     """This function load 2 images from their path and return 2 ITK objects.
@@ -30,7 +40,8 @@ def registration_reader (fixed_image_filename, moving_image_filename):
     
     return fixed_image, moving_image;
     
-
+#####
+#REGISTRATION FUNCTION
 
 def elastix_registration(fixed_image, moving_image):
     """This function do the registration of a moving image over a fixed image.
@@ -52,7 +63,7 @@ def elastix_registration(fixed_image, moving_image):
     
     """
     
-    #This registration will be done using 3 different typer of transformation in subsequent order
+    #This registration will be done using 3 different type of transformation in subsequent order
     
     # Setting our number of resolutions
     parameter_object = itk.ParameterObject.New()
@@ -68,7 +79,7 @@ def elastix_registration(fixed_image, moving_image):
     
     #Adding an AFFINE parameter map
     parameter_map_affine = parameter_object.GetDefaultParameterMap("affine", resolutions)
-    parameter_map_affine['Metric']      = ['AdvancedMattesMutualInformation']
+    parameter_map_affine['Metric']       = ['AdvancedMattesMutualInformation']
     parameter_map_affine['Interpolator'] = ['BSplineInterpolatorFloat']
 
     parameter_object.AddParameterMap(parameter_map_affine)
@@ -76,7 +87,6 @@ def elastix_registration(fixed_image, moving_image):
     
     #Adding a NON-RIGID parameter map
     parameter_map_bspline = parameter_object.GetDefaultParameterMap("bspline", resolutions)
-    parameter_map_bspline['Metric']      = ['AdvancedMattesMutualInformation']
     parameter_map_bspline['Interpolator'] = ['BSplineInterpolatorFloat']
     parameter_object.AddParameterMap(parameter_map_bspline)
     
@@ -95,6 +105,8 @@ def elastix_registration(fixed_image, moving_image):
     return result_moving_image, result_transform_parameters
 
 
+#####
+#IMAGE WRITER
 
 def registration_writer(image, file_path):
     
@@ -112,6 +124,36 @@ def registration_writer(image, file_path):
     print("Your file is written!")
 
 
+#####
+#GRAPHIC INTERFACE TO SET THE READER AND THE WRITER
 
+def Graphical_setter():
+    """This function opens some dialog windows to let choose the user the fixed image,
+     the moving image and the path of the output file.
+        
+        Returns:
+        
+            fixed_image : string
+                The complete path to the fixed image
+                
+            moving_image : string 
+                The complete path to the moving image
+                
+            output_filepath : string
+                The path to the directory where the output image will be written
+    """
+    #questi comandi inizializzano tkinter
+    root = tk.Tk()
+    root.withdraw()
 
+    #Fixed Image
+    #questo comando apre la finestra di dialogo e mi permette di scegliere il percorso del file
+    fixed_image_filename = filedialog.askopenfilename(title = "Select the fixed image")
 
+    #Moving Image
+    moving_image_filename = filedialog.askopenfilename(title = "Select the moving image")
+
+    #Where to save the registered image
+    output_filepath = filedialog.askdirectory(title = "Select where do you want to save the new image")
+    
+    return fixed_image_filename, moving_image_filename, output_filepath
