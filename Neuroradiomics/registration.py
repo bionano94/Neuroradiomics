@@ -43,7 +43,7 @@ def registration_reader (fixed_image_filename, moving_image_filename):
 #####
 #REGISTRATION FUNCTION
 
-def elastix_registration(fixed_image, moving_image):
+def elastix_registration(fixed_image, moving_image, clog_value = False):
     """This function do the registration of a moving image over a fixed image.
     
     Args:
@@ -53,6 +53,9 @@ def elastix_registration(fixed_image, moving_image):
                     
         moving_image : itk.F object
                     Image that has to be registered
+                    
+        clog_value : boolean object.
+                    Default is False. If true it can be seen the Log_To_Console of the Elastix Registration.
         
     Returns:
         result_image : elastix object
@@ -95,7 +98,7 @@ def elastix_registration(fixed_image, moving_image):
     registered_image, result_transform_parameters = itk.elastix_registration_method(
     fixed_image, moving_image,
     parameter_object = parameter_object,
-    log_to_console = False)
+    log_to_console = clog_value)
     
     print("The Registration is done!")
     
@@ -108,7 +111,7 @@ def elastix_registration(fixed_image, moving_image):
 #####
 #IMAGE WRITER
 
-def registration_writer(image, file_path):
+def registration_writer(image, file_path = './'):
     
     """This save an itk image as a nifti image as "output_image.nii".
         
