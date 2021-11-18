@@ -3,10 +3,8 @@
 
 
 import itk
-
-#This is useful for the Graphical_Setter function
-import tkinter as tk
-from tkinter import filedialog
+import os
+from datetime import datetime
 
 
 ###############################################################################
@@ -102,18 +100,15 @@ def elastix_registration(fixed_image, moving_image, clog_value = False):
     
     print("The Registration is done!")
     
-    #Beacuse the registration is done on a downsampled image, we apply the final transformation on the original moving image
-    result_moving_image = itk.transformix_filter(moving_image, result_transform_parameters)
-    
-    return result_moving_image, result_transform_parameters
+    return registered_image, result_transform_parameters
 
 
 #####
 #IMAGE WRITER
 
-def registration_writer(image, file_path = './'):
+def registration_writer(image, path = './'):
     
-    """This save an itk image as a nifti image as "output_image.nii".
+    """This creates a directory and save in it an itk image as a nifti image as "registered_image.nii".
         
         Args:
         
@@ -121,42 +116,51 @@ def registration_writer(image, file_path = './'):
                 The image that has to be written
                 
             file_path : string
-                Path where the image will be saved
-    """
-    itk.imwrite(image, file_path+"/output_image.nii")
-    print("Your file is written!")
-
-
-#####
-#GRAPHIC INTERFACE TO SET THE READER AND THE WRITER
-
-def Graphical_setter():
-    """This function opens some dialog windows to let choose the user the fixed image,
-     the moving image and the path of the output file.
-        
+                Path where will be the directory in which the image will be saved
+         
+         
+         
         Returns:
         
-            fixed_image : string
-                The complete path to the fixed image
-                
-            moving_image : string 
-                The complete path to the moving image
-                
-            output_filepath : string
-                The path to the directory where the output image will be written
+            dir_path : string
+                Path of the created directory
     """
-    #questi comandi inizializzano tkinter
-    root = tk.Tk()
-    root.withdraw()
-
-    #Fixed Image
-    #questo comando apre la finestra di dialogo e mi permette di scegliere il percorso del file
-    fixed_image_filename = filedialog.askopenfilename(title = "Select the fixed image")
-
-    #Moving Image
-    moving_image_filename = filedialog.askopenfilename(title = "Select the moving image")
-
-    #Where to save the registered image
-    output_filepath = filedialog.askdirectory(title = "Select where do you want to save the new image")
+    #find the actual date and time
+    now = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
+    #name of the directory
+    dir_name = 'Registration_'+now
     
-    return fixed_image_filename, moving_image_filename, output_filepath
+    if not os.path.exists('./'+dir_name):
+        os.mkdir('./'+dir_name)
+    
+    dir_path = path + dir_name
+    itk.imwrite(image, dir_path + "/registered_image.nii")
+   
+    
+    return dir_path
+
+
+    
+#####
+#APPLY THE SAME TRANSFORM ON OTHER IMAGES
+def registration_transform(image, transform):
+    '''
+    This function simply apply the transformation obtained to other images
+    
+    Args:
+    
+        image : itk object
+            The image you want to transform
+            
+        transform_params : Elastix parameter map
+            The transformation you want to apply on the image
+            
+    Returns:
+    
+        result_image : itk object
+            The image transformed
+    '''
+
+    result_image = itk.transformix_filter(image, transform)
+    
+    return result_image
