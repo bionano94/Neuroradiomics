@@ -19,79 +19,60 @@ import os
 
 
 ################################################################################
-##                          Define Test strategies                            ##
+###                         Define Test strategies                           ###
 ################################################################################
 
 
 @st.composite
-def elastix_IO_strategy(draw):
+def square_image_strategy(draw):
+    image = np.zeros([100, 100], np.float32)
+    
+    side = draw(st.integers(10,50))
+    x1 = draw(st.integers(10,50))
+    y1 = draw (st.integers(10,50))
+    x2 = x1 + side
+    y2 = y1 + side
+    
+    for x in range (x1, x2):
+        for y in range (y1, y2):
+            image[x,y]=1
+    image = itk.image_view_from_array(image)
+    return image
+
+
+@st.composite
+def rectangular_image_strategy(draw):
+    image = np.zeros([100, 100], np.float32)
+    
+    x1 = draw(st.integers(10,90))
+    y1 = draw (st.integers(10,90))
+    x2 = draw (st.integers(10,90))
+    y2 = draw (st.integers(10,90))
+    
+    for x in range (x1, x2):
+        for y in range (y1, y2):
+            image[x,y]=1
+    image = itk.image_view_from_array(image)
+    return image
+
+
+@st.composite
+def random_image_strategy(draw):
     
     '''
     This function generates a 3D random itk image
     '''
     
-    Dimension = 3
     PixelType = itk.F
-    ImageType = itk.Image[PixelType, Dimension]
-        
-        
-    Origin = draw(st.tuples(*[st.integers(0, 100)] * Dimension))
-    Size = ( draw(st.integers(10, 100)), draw(st.integers(10, 100)), draw(st.integers(10, 100)) )
-    
-    region = itk.ImageRegion[Dimension]()
-    region.SetSize(Size)
-    region.SetIndex(Origin)
-    
-    RandomSourceType = itk.RandomImageSource[ImageType]
-    randomImageSource = RandomSourceType.New()
-    randomImageSource.SetSize(Size)
-    randomImageSource.GetOutput().SetRequestedRegion(region)
-    
+    ImageType = itk.Image[PixelType, 3]
+    Size = ( draw(st.integers(10,100)), draw(st.integers(10,100)) , draw(st.integers(10,100)) )
 
-    image = randomImageSource.GetOutput()
-    
+    rndImage = itk.RandomImageSource[ImageType].New()
+    rndImage.SetSize(Size)
+    rndImage.SetNumberOfWorkUnits(1)
+    rndImage.UpdateLargestPossibleRegion()
 
-    image.SetRegions(region)
-    image.Allocate() 
-    
-    
-    return image
-
-@st.composite
-def random_square_strategy(draw):
-    
-    '''
-    This function generates a 3D random square itk image
-    '''
-    
-    Dimension = 3
-    PixelType = itk.F
-    ImageType = itk.Image[PixelType, Dimension]
-        
-    
-    axis_size = draw (st.integers(10,100))
-    Origin = draw(st.tuples(*[st.integers(0, 100)] * Dimension))
-    Size = ( axis_size, axis_size, axis_size )
-    
-    region = itk.ImageRegion[Dimension]()
-    region.SetSize(Size)
-    region.SetIndex(Origin)
-    
-    RandomSourceType = itk.RandomImageSource[ImageType]
-    randomImageSource = RandomSourceType.New()
-    randomImageSource.SetSize(Size)
-    randomImageSource.GetOutput().SetRequestedRegion(region)
-    
-
-    image = randomImageSource.GetOutput()
-    
-
-    image.SetRegions(region)
-    image.Allocate() 
-    
-    
-    return image
-
+    return rndImage.GetOutput()
 
 
 ################################################################################
@@ -106,7 +87,7 @@ def test_pytest_properly_works():
     
     
 
-@given(image = elastix_IO_strategy())
+@given(image = random_image_strategy())
 @settings(deadline = None)
 def test_pytest_itk(image):
     '''
@@ -130,7 +111,7 @@ def test_pytest_itk(image):
     
     
     
-@given(image = elastix_IO_strategy())
+@given(image = random_image_strategy())
 @settings(deadline = None)
 def test_elastix_registration_reader(image):
     '''
@@ -161,18 +142,21 @@ def test_elastix_registration_reader(image):
     
     
     
-@given(image= elastix_IO_strategy())
+@given(image= random_image_strategy())
 @settings(deadline = None)
 def test_elastix_registration_writer(image):
     '''
     This function tests if the writer works properly
     '''
-    registration_writer(image)
+    dir_path = registration_writer(image)
+    os.chdir(dir_path)
     itk.imwrite(image, "itk_written_image.nii")
-    read_image = itk.imread("./output_image.nii")
+    read_image = itk.imread("./registered_image.nii")
     itk_written_image = itk.imread("./itk_written_image.nii")
-    os.remove("./output_image.nii")
+    os.remove("./registered_image.nii")
     os.remove("./itk_written_image.nii")
+    os.chdir('..')
+    os.rmdir(dir_path)
 
 
     
@@ -186,8 +170,8 @@ def test_elastix_registration_writer(image):
     
     
 
-
-@given(fixed_image = elastix_IO_strategy(), moving_image = random_square_strategy())
+    
+@given(fixed_image = square_image_strategy(), moving_image = rectangular_image_strategy())
 @settings(deadline = None)
 def test_elastix_registration_dimension(fixed_image, moving_image):
     
@@ -203,7 +187,12 @@ def test_elastix_registration_dimension(fixed_image, moving_image):
     ImageType = itk.Image[itk.UC, 3]
     final_image = ImageType.New()
     
-    final_image, registration_parameters = elastix_registration(f_image, m_image, True)
-    LogToConsoleOn()
-    assert np.all(final_image.GetLargestPossibleRegion().GetSize() == f_image.GetLargestPossibleRegion().GetSize())
+    final_image, registration_parameters = elastix_registration(fixed_image, moving_image)
+    
+    
+    itk.imwrite(final_image, "./final_image.nii")
+    reg_image = itk.imread('./final_image.nii')
+    os.remove('./final_image.nii')              
+    
+    assert np.all(reg_image.GetLargestPossibleRegion().GetSize() == f_image.GetLargestPossibleRegion().GetSize())
     
