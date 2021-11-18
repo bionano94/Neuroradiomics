@@ -23,6 +23,25 @@ import os
 ################################################################################
 
 
+
+@st.composite
+def random_image_strategy(draw):
+    
+    '''
+    This function generates a 3D random itk image
+    '''
+    
+    PixelType = itk.F
+    ImageType = itk.Image[PixelType, 3]
+    Size = ( draw(st.integers(10,100)), draw(st.integers(10,100)) , draw(st.integers(10,100)) )
+
+    rndImage = itk.RandomImageSource[ImageType].New()
+    rndImage.SetSize(Size)
+    rndImage.SetNumberOfWorkUnits(1)
+    rndImage.UpdateLargestPossibleRegion()
+
+    return rndImage.GetOutput()
+
 @st.composite
 def square_image_strategy(draw):
     image = np.zeros([100, 100], np.float32)
@@ -44,7 +63,7 @@ def square_image_strategy(draw):
 def rectangular_image_strategy(draw):
     image = np.zeros([100, 100], np.float32)
     
-    x1 = draw(st.integers(10,90))
+    x1 = draw (st.integers(10,90))
     y1 = draw (st.integers(10,90))
     x2 = draw (st.integers(10,90))
     y2 = draw (st.integers(10,90))
@@ -55,24 +74,45 @@ def rectangular_image_strategy(draw):
     image = itk.image_view_from_array(image)
     return image
 
+@st.composite
+def cubic_image_strategy(draw):
+    image = np.zeros([100, 100, 100], np.float32)
+    
+    side = draw (st.integers(10,50))
+    x1 = draw (st.integers(10,50))
+    y1 = draw (st.integers(10,50))
+    z1 = draw (st.integers(10,50))
+    x2 = x1 + side
+    y2 = y1 + side
+    z2 = z1 + side
+    
+    for x in range (x1, x2):
+        for y in range (y1, y2):
+            for z in range (z1, z2):
+                image[x,y]=1
+                
+    image = itk.image_view_from_array(image)
+    return image
+
 
 @st.composite
-def random_image_strategy(draw):
+def poligon_image_strategy(draw):
+    image = np.zeros([100, 100, 100], np.float32)
     
-    '''
-    This function generates a 3D random itk image
-    '''
+    x1 = draw (st.integers(10,50))
+    y1 = draw (st.integers(10,50))
+    x2 = draw (st.integers(10,50))
+    y2 = draw (st.integers(10,50))
+    z1 = draw (st.integers(10,50))
+    z2 = draw (st.integers(10,50))
     
-    PixelType = itk.F
-    ImageType = itk.Image[PixelType, 3]
-    Size = ( draw(st.integers(10,100)), draw(st.integers(10,100)) , draw(st.integers(10,100)) )
-
-    rndImage = itk.RandomImageSource[ImageType].New()
-    rndImage.SetSize(Size)
-    rndImage.SetNumberOfWorkUnits(1)
-    rndImage.UpdateLargestPossibleRegion()
-
-    return rndImage.GetOutput()
+    for x in range (x1, x2):
+        for y in range (y1, y2):
+            for z in range (z1, z2):
+                image[x,y]=1
+                
+    image = itk.image_view_from_array(image)
+    return image
 
 
 ################################################################################
@@ -172,11 +212,12 @@ def test_elastix_registration_writer(image):
 
     
 @given(fixed_image = square_image_strategy(), moving_image = rectangular_image_strategy())
-@settings(deadline = None)
-def test_elastix_registration_dimension(fixed_image, moving_image):
+@settings(max_examples=20, deadline = None)
+def test_2D_elastix_registration_dimension(fixed_image, moving_image):
     
     '''
-    This function tests if the final registered image has the same size of the initial fixed image
+    This function tests if the final registered image has the same size and the same spaging of the initial fixed image.
+    This is for 2D images.
     '''
     itk.imwrite(fixed_image, "./f_image.nii")
     itk.imwrite(moving_image, "./m_image.nii")
@@ -195,4 +236,33 @@ def test_elastix_registration_dimension(fixed_image, moving_image):
     os.remove('./final_image.nii')              
     
     assert np.all(reg_image.GetLargestPossibleRegion().GetSize() == f_image.GetLargestPossibleRegion().GetSize())
+    assert np.all(reg_image.GetSpacing() == f_image.GetSpacing())
+    
+    
+@given(fixed_image = cubic_image_strategy(), moving_image = poligon_image_strategy())
+@settings(max_examples=20, deadline = None)
+def test_3D_elastix_registration_dimension(fixed_image, moving_image):
+    
+    '''
+    This function tests if the final registered image has the same size and the same spaging of the initial fixed image.
+    This is for 2D images.
+    '''
+    itk.imwrite(fixed_image, "./f_image.nii")
+    itk.imwrite(moving_image, "./m_image.nii")
+    f_image, m_image = registration_reader('./f_image.nii','./m_image.nii')
+    os.remove("./f_image.nii")
+    os.remove("./m_image.nii")
+    
+    ImageType = itk.Image[itk.UC, 3]
+    final_image = ImageType.New()
+    
+    final_image, registration_parameters = elastix_registration(fixed_image, moving_image)
+    
+    
+    itk.imwrite(final_image, "./final_image.nii")
+    reg_image = itk.imread('./final_image.nii')
+    os.remove('./final_image.nii')              
+    
+    assert np.all(reg_image.GetLargestPossibleRegion().GetSize() == f_image.GetLargestPossibleRegion().GetSize())
+    assert np.all(reg_image.GetSpacing() == f_image.GetSpacing())
     
