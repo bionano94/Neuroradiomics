@@ -245,7 +245,7 @@ def test_3D_elastix_registration_dimension(fixed_image, moving_image):
     
     '''
     This function tests if the final registered image has the same size and the same spaging of the initial fixed image.
-    This is for 2D images.
+    This is for 3D images.
     '''
     itk.imwrite(fixed_image, "./f_image.nii")
     itk.imwrite(moving_image, "./m_image.nii")
