@@ -5,7 +5,6 @@ import argparse
 from Neuroradiomics.registration import registration_reader
 from Neuroradiomics.registration import elastix_registration
 from Neuroradiomics.registration import registration_writer
-from Neuroradiomics.registration import registration_transform
 
 
 def parse_args():
@@ -51,14 +50,10 @@ def main():
     #read the fixed and moving image
     
     f_image, m_image = registration_reader(args.fixed_image, args.moving_image)
-
-    #Do the registration
-    final_image, final_params = elastix_registration(f_image, m_image, args.clog)
-    
-    #write the final registered image
-   # registration_writer(final_image, final_params, args.output)
     
     
+    #do the registration and write it
+    registration_writer( elastix_registration(f_image, m_image, args.clog), args.output )
 
 
 if __name__ == '__main__':

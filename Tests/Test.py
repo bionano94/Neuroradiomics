@@ -10,6 +10,10 @@ from hypothesis import HealthCheck as HC
 from Neuroradiomics.registration import registration_reader
 from Neuroradiomics.registration import elastix_registration
 from Neuroradiomics.registration import registration_writer
+from Neuroradiomics.registration import apply_transform_from_files
+from Neuroradiomics.registration import read_transform_from_files
+
+
 
 
 import itk
@@ -18,9 +22,11 @@ import os
 
 
 
-################################################################################
-###                         Define Test strategies                           ###
-################################################################################
+# ███████ ████████ ██████   █████  ████████ ███████  ██████  ██ ███████ ███████
+# ██         ██    ██   ██ ██   ██    ██    ██      ██       ██ ██      ██
+# ███████    ██    ██████  ███████    ██    █████   ██   ███ ██ █████   ███████
+#      ██    ██    ██   ██ ██   ██    ██    ██      ██    ██ ██ ██           ██
+# ███████    ██    ██   ██ ██   ██    ██    ███████  ██████  ██ ███████ ███████
 
 
 
@@ -115,9 +121,24 @@ def poligon_image_strategy(draw):
     return image
 
 
-################################################################################
-###                                 TESTING                                  ###
-################################################################################
+
+# ████████ ███████ ███████ ████████ ███████ 
+#    ██    ██      ██         ██    ██      
+#    ██    █████   ███████    ██    ███████
+#    ██    ██           ██    ██         ██
+#    ██    ███████ ███████    ██    ███████
+
+
+
+#######################################
+#####     AM I TESTING RIGHT?     #####
+#######################################
+
+
+
+
+
+# Is Pytest working?
 
 def test_pytest_properly_works():
     '''
@@ -126,6 +147,8 @@ def test_pytest_properly_works():
     assert 1 == 1
     
     
+
+#Are tests working with ITK?
 
 @given(image = random_image_strategy())
 @settings(deadline = None)
@@ -150,7 +173,16 @@ def test_pytest_itk(image):
     
     
     
+
     
+#######################################
+#####     I/O Functions Tests     #####
+#######################################
+
+
+
+#Registration Reader Test
+
 @given(image = random_image_strategy())
 @settings(deadline = None)
 def test_elastix_registration_reader(image):
@@ -180,22 +212,103 @@ def test_elastix_registration_reader(image):
     assert np.all( np.isclose( itk.GetArrayFromImage(read_im2), itk.GetArrayFromImage(normal_read_image)) )
     
     
+
     
     
-@given(image= random_image_strategy())
-@settings(deadline = None)
-def test_elastix_registration_writer(image):
+# Transformation Parameters Reader Test
+
+# 2D Transformation
+    
+@given(fixed_image = square_image_strategy(), moving_image = rectangular_image_strategy())
+@settings(max_examples=10, deadline = None)
+def test_read_transformation(fixed_image, moving_image):
+    
+    '''
+    This function tests if the transformation reader operates properly
+    '''
+    
+    #run a registration
+    elastix_object = elastix_registration(fixed_image, moving_image)
+    
+    registered_image = elastix_object.GetOutput()
+    final_tranf_params = elastix_object.GetTransformParameterObject()
+    
+    #write the registration and its parameters
+    dir_path = registration_writer(elastix_object)
+    
+    os.chdir(dir_path)
+    
+    #read the Parameters
+    transform_params = read_transform_from_files('./')
+    
+    #apply the transformation over the same image with the 2 parameter objects
+    direct_transf = itk.transformix_filter(moving_image, final_tranf_params)
+    my_transf = itk.transformix_filter(moving_image, transform_params)
+    
+    #delete everything was created
+    os.chdir('..')
+    for f in os.listdir(dir_path):
+        os.remove(os.path.join(dir_path, f))
+        
+    os.rmdir(dir_path)
+    
+    
+    assert np.all(direct_transf.GetLargestPossibleRegion().GetSize() == my_transf.GetLargestPossibleRegion().GetSize())
+    #Same Spacing
+    assert np.all(direct_transf.GetSpacing() == my_transf.GetSpacing())
+    #Same Image
+    assert np.all(np.isclose( itk.GetArrayFromImage(direct_transf), itk.GetArrayFromImage(my_transf)) )
+    
+    
+    
+    
+
+# Registration Writer Test
+
+@given(fixed_image = square_image_strategy(), moving_image = rectangular_image_strategy())
+@settings(max_examples=20, deadline = None)
+def test_elastix_registration_writer(fixed_image, moving_image):
     '''
     This function tests if the writer works properly
     '''
-    dir_path = registration_writer(image)
+    
+    #create the elastix object for the registration
+    parameter_object = itk.ParameterObject.New()
+    default_rigid_parameter_map = parameter_object.GetDefaultParameterMap('rigid')
+    parameter_object.AddParameterMap(default_rigid_parameter_map)
+
+    #set and run the registration
+    elastix_object = itk.ElastixRegistrationMethod.New(fixed_image, moving_image)
+    elastix_object.SetParameterObject(parameter_object)
+    elastix_object.UpdateLargestPossibleRegion()
+
+    #go with the function we want to test
+    dir_path = registration_writer(elastix_object)
+    
+    #go inside our new directory
     os.chdir(dir_path)
-    itk.imwrite(image, "itk_written_image.nii")
+    
+    #write the same result file with already tested ITK function
+    itk.imwrite(elastix_object.GetOutput(), "itk_written_image.nii")
+    
+    #read our 2 images
     read_image = itk.imread("./registered_image.nii")
     itk_written_image = itk.imread("./itk_written_image.nii")
-    os.remove("./registered_image.nii")
-    os.remove("./itk_written_image.nii")
+    
+    #read our transformation files
+    
+    num_of_transf = len(os.listdir('./')) - 2 #-2 because we also have 2 images in the directory
+    
+    for i in range(0, num_of_transf):
+        with open('TransformParameters.' + str(i) + '.txt') as f:
+            lines = f.readlines()
+    f.close()
+    
+    #delete everything was created
     os.chdir('..')
+    for f in os.listdir(dir_path):
+        os.remove(os.path.join(dir_path, f))
+        
     os.rmdir(dir_path)
 
 
@@ -207,62 +320,145 @@ def test_elastix_registration_writer(image):
     assert np.all(read_image.GetSpacing() == itk_written_image.GetSpacing())
     #Same Image
     assert np.all( np.isclose( itk.GetArrayFromImage(read_image), itk.GetArrayFromImage(itk_written_image)) )
+    #Is the transformation saved?
+    assert lines
+    
     
     
 
     
+#############################################
+#####     Operative Functions Tests     #####
+#############################################
+    
+    
+# 2D Registration
+
 @given(fixed_image = square_image_strategy(), moving_image = rectangular_image_strategy())
 @settings(max_examples=20, deadline = None)
-def test_2D_elastix_registration_dimension(fixed_image, moving_image):
+def test_2D_elastix_registration(fixed_image, moving_image):
     
     '''
     This function tests if the final registered image has the same size and the same spaging of the initial fixed image.
     This is for 2D images.
     '''
-    itk.imwrite(fixed_image, "./f_image.nii")
-    itk.imwrite(moving_image, "./m_image.nii")
-    f_image, m_image = registration_reader('./f_image.nii','./m_image.nii')
-    os.remove("./f_image.nii")
-    os.remove("./m_image.nii")
     
-    ImageType = itk.Image[itk.UC, 3]
-    final_image = ImageType.New()
+    elastix_object = elastix_registration(fixed_image, moving_image)
+    image = elastix_object.GetOutput()
     
-    final_image, registration_parameters = elastix_registration(fixed_image, moving_image)
-    
-    
-    itk.imwrite(final_image, "./final_image.nii")
+    itk.imwrite(image, "./final_image.nii")
     reg_image = itk.imread('./final_image.nii')
+    
     os.remove('./final_image.nii')              
+                
     
-    assert np.all(reg_image.GetLargestPossibleRegion().GetSize() == f_image.GetLargestPossibleRegion().GetSize())
-    assert np.all(reg_image.GetSpacing() == f_image.GetSpacing())
+    assert np.all(reg_image.GetLargestPossibleRegion().GetSize() == fixed_image.GetLargestPossibleRegion().GetSize())
+    assert np.all(reg_image.GetSpacing() == fixed_image.GetSpacing())
     
+
     
+# 3D Registration
+
 @given(fixed_image = cubic_image_strategy(), moving_image = poligon_image_strategy())
 @settings(max_examples=20, deadline = None)
-def test_3D_elastix_registration_dimension(fixed_image, moving_image):
+def test_3D_elastix_registration(fixed_image, moving_image):
     
     '''
     This function tests if the final registered image has the same size and the same spaging of the initial fixed image.
     This is for 3D images.
     '''
-    itk.imwrite(fixed_image, "./f_image.nii")
-    itk.imwrite(moving_image, "./m_image.nii")
-    f_image, m_image = registration_reader('./f_image.nii','./m_image.nii')
-    os.remove("./f_image.nii")
-    os.remove("./m_image.nii")
+  
+    elastix_object = elastix_registration(fixed_image, moving_image)
+    image = elastix_object.GetOutput()
     
-    ImageType = itk.Image[itk.UC, 3]
-    final_image = ImageType.New()
-    
-    final_image, registration_parameters = elastix_registration(fixed_image, moving_image)
-    
-    
-    itk.imwrite(final_image, "./final_image.nii")
+    itk.imwrite(image, "./final_image.nii")
     reg_image = itk.imread('./final_image.nii')
+    
     os.remove('./final_image.nii')              
     
-    assert np.all(reg_image.GetLargestPossibleRegion().GetSize() == f_image.GetLargestPossibleRegion().GetSize())
-    assert np.all(reg_image.GetSpacing() == f_image.GetSpacing())
+    assert np.all(reg_image.GetLargestPossibleRegion().GetSize() == fixed_image.GetLargestPossibleRegion().GetSize())
+    assert np.all(reg_image.GetSpacing() == fixed_image.GetSpacing())
+    
+
+    
+# 2D Transformation
+    
+@given(fixed_image = square_image_strategy(), moving_image = rectangular_image_strategy())
+@settings(max_examples=20, deadline = None)
+def test_2D_elastix_transform(fixed_image, moving_image):
+    
+    '''
+    This function tests if the transformation function operate properly
+    This is for 2D images.
+    '''
+    
+    #run a registration
+    elastix_object = elastix_registration(fixed_image, moving_image)
+    
+    registered_image = elastix_object.GetOutput()
+    
+    #write the registration and it parameters
+    dir_path = registration_writer(elastix_object)
+    
+    os.chdir(dir_path)
+    
+    #apply the transformation with the parameters obtained on the moving_image
+    transformed_image = apply_transform_from_files(moving_image, './')
+    
+    #delete everything was created
+    os.chdir('..')
+    for f in os.listdir(dir_path):
+        os.remove(os.path.join(dir_path, f))
+        
+    os.rmdir(dir_path)
+    
+    #Test if the 2 images obtained are the same one
+    #The Same Size
+    assert np.all(transformed_image.GetLargestPossibleRegion().GetSize() == registered_image.GetLargestPossibleRegion().GetSize())
+    #Same Spacing
+    assert np.all(transformed_image.GetSpacing() == registered_image.GetSpacing())
+    #Same Image
+    assert np.all(np.isclose( itk.GetArrayFromImage(transformed_image), itk.GetArrayFromImage(registered_image)) )
+    
+    
+    
+    
+# 3D Transformation
+    
+@given(fixed_image = cubic_image_strategy(), moving_image = poligon_image_strategy())
+@settings(max_examples=20, deadline = None)
+def test_3D_elastix_transform(fixed_image, moving_image):
+    
+    '''
+    This function tests if the transformation function operate properly
+    This is for 3D images.
+    '''
+    
+    #run a registration
+    elastix_object = elastix_registration(fixed_image, moving_image)
+    
+    registered_image = elastix_object.GetOutput()
+    
+    #write the registration and it parameters
+    dir_path = registration_writer(elastix_object)
+    
+    os.chdir(dir_path)
+    
+    #apply the transformation with the parameters obtained on the moving_image
+    transformed_image = apply_transform_from_files(moving_image, './')
+    
+    #delete everything was created
+    os.chdir('..')
+    for f in os.listdir(dir_path):
+        os.remove(os.path.join(dir_path, f))
+        
+    os.rmdir(dir_path)
+    
+    #Test if the 2 images obtained are the same one
+    #The Same Size
+    assert np.all(transformed_image.GetLargestPossibleRegion().GetSize() == registered_image.GetLargestPossibleRegion().GetSize())
+    #Same Spacing
+    assert np.all(transformed_image.GetSpacing() == registered_image.GetSpacing())
+    #Same Image
+    assert np.all(np.isclose( itk.GetArrayFromImage(transformed_image), itk.GetArrayFromImage(registered_image)) )
     
