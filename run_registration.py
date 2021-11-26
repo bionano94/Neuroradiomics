@@ -3,26 +3,34 @@ import numpy as np
 import argparse
 
 from Neuroradiomics.registration import registration_reader
-from Neuroradiomics.registration import elastix_registration
+from Neuroradiomics.registration import elastix_multimap_registration
 from Neuroradiomics.registration import registration_writer
+from Neuroradiomics.registration import elastix_rigid_registration
+
 
 
 def parse_args():
     description = 'Automated Elastix MRI Brain Image Registration'
     parser = argparse.ArgumentParser(description=description)
 
-    parser.add_argument('--fixed',
-                        dest='fixed_image',
+    parser.add_argument('--t1',
+                        dest='t1_image',
                         required=True,
                         type=str,
                         action='store',
-                        help='Fixed_Image filename')
-    parser.add_argument('--moving',
-                        dest='moving_image',
+                        help='t1_Image filename')
+    parser.add_argument('--flair',
+                        dest='flair_image',
                         required=True,
                         type=str,
                         action='store',
-                        help='Moving_Image filename')
+                        help='Flair_Image filename')
+    parser.add_argument('--atlas',
+                        dest='atlas_image',
+                        required=True,
+                        type=str,
+                        action='store',
+                        help='Atlas_Image filename')
     parser.add_argument('--log_to_console',
                         dest='clog',
                         required=False,
@@ -44,17 +52,23 @@ def parse_args():
 
 def main():
 
-    # parse the arguments: Fixed Image, Moving Image, Output file path (optional)
+    # parse the arguments
     args = parse_args()
 
+    
     #read the fixed and moving image
+    flair_image, t1_image = registration_reader(args.flair_image, args.t1_image)
     
-    f_image, m_image = registration_reader(args.fixed_image, args.moving_image)
+    #Registrate the t1 image over the flair image
     
+    t1_moved_image = elastix_rigid_registration(flair_image, t1_image, args.clog)
+    
+    atlas = itk.imread(args.atlas_image, itk.F)
     
     #do the registration and write it
-    registration_writer( elastix_registration(f_image, m_image, args.clog), args.output )
+    directory = registration_writer( elastix_multimap_registration(t1_moved_image, atlas, args.clog), args.output )
 
+    itk.imwrite(t1_moved_image, directory+'/registered_t1.nii')
 
 if __name__ == '__main__':
 

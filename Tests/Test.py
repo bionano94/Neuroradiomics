@@ -8,10 +8,11 @@ from hypothesis import HealthCheck as HC
 
 
 from Neuroradiomics.registration import registration_reader
-from Neuroradiomics.registration import elastix_registration
+from Neuroradiomics.registration import elastix_multimap_registration
 from Neuroradiomics.registration import registration_writer
 from Neuroradiomics.registration import apply_transform_from_files
 from Neuroradiomics.registration import read_transform_from_files
+from Neuroradiomics.registration import elastix_rigid_registration
 
 
 
@@ -50,6 +51,9 @@ def random_image_strategy(draw):
 
 @st.composite
 def square_image_strategy(draw):
+    '''
+    This function generates an itk image with a random 2D square.
+    '''
     image = np.zeros([100, 100], np.float32)
     
     side = draw(st.integers(10,50))
@@ -67,6 +71,9 @@ def square_image_strategy(draw):
 
 @st.composite
 def rectangular_image_strategy(draw):
+    '''
+    This function generates an itk image with a random 2D rectangle.
+    '''
     image = np.zeros([100, 100], np.float32)
     
     x1 = draw (st.integers(10,90))
@@ -82,6 +89,9 @@ def rectangular_image_strategy(draw):
 
 @st.composite
 def cubic_image_strategy(draw):
+    '''
+    This function generates an itk image with a random 3D cube.
+    '''
     image = np.zeros([100, 100, 100], np.float32)
     
     side = draw (st.integers(10,50))
@@ -103,6 +113,9 @@ def cubic_image_strategy(draw):
 
 @st.composite
 def poligon_image_strategy(draw):
+    '''
+    This function generates an itk image with a random 3D poligon.
+    '''
     image = np.zeros([100, 100, 100], np.float32)
     
     x1 = draw (st.integers(10,50))
@@ -118,6 +131,33 @@ def poligon_image_strategy(draw):
                 image[x,y]=1
                 
     image = itk.image_view_from_array(image)
+    return image
+
+
+
+
+
+@st.composite
+def rigid_square_image_strategy(draw):
+    '''
+    This function generates an itk image with a random 2D square.
+    '''
+    
+    #I create a square image
+    image = np.zeros([200, 200], np.float32)
+    
+    side = 50
+    x1 = draw(st.integers(1,140))
+    y1 = draw (st.integers(1,140))
+    x2 = x1 + side
+    y2 = y1 + side
+    
+    for x in range (x1, x2):
+        for y in range (y1, y2):
+            image[x,y]=1
+    image = itk.image_view_from_array(image)
+    
+    
     return image
 
 
@@ -228,7 +268,7 @@ def test_read_transformation(fixed_image, moving_image):
     '''
     
     #run a registration
-    elastix_object = elastix_registration(fixed_image, moving_image)
+    elastix_object = elastix_multimap_registration(fixed_image, moving_image)
     
     registered_image = elastix_object.GetOutput()
     final_tranf_params = elastix_object.GetTransformParameterObject()
@@ -330,20 +370,44 @@ def test_elastix_registration_writer(fixed_image, moving_image):
 #############################################
 #####     Operative Functions Tests     #####
 #############################################
-    
-    
-# 2D Registration
 
-@given(fixed_image = square_image_strategy(), moving_image = rectangular_image_strategy())
-@settings(max_examples=20, deadline = None)
-def test_2D_elastix_registration(fixed_image, moving_image):
+# 2D Rigid Registration
+
+@given(fixed_image = rigid_square_image_strategy(), moving_image = rigid_square_image_strategy())
+@settings(max_examples=30, deadline = None)
+def test_2D_elastix_rigid_registration(fixed_image, moving_image):
     
     '''
     This function tests if the final registered image has the same size and the same spaging of the initial fixed image.
     This is for 2D images.
     '''
     
-    elastix_object = elastix_registration(fixed_image, moving_image)
+    elastix_object = elastix_rigid_registration(fixed_image, moving_image, True)
+    image = elastix_object.GetOutput()
+    
+    itk.imwrite(image, "./final_image.nii")
+    reg_image = itk.imread('./final_image.nii')
+    
+    os.remove('./final_image.nii')              
+                
+    
+    assert np.all(reg_image.GetLargestPossibleRegion().GetSize() == fixed_image.GetLargestPossibleRegion().GetSize())
+    assert np.all(reg_image.GetSpacing() == fixed_image.GetSpacing())
+    
+    
+    
+# 2D Multimap Registration
+
+@given(fixed_image = square_image_strategy(), moving_image = rectangular_image_strategy())
+@settings(max_examples=20, deadline = None)
+def test_2D_elastix_multimap_registration(fixed_image, moving_image):
+    
+    '''
+    This function tests if the final registered image has the same size and the same spaging of the initial fixed image.
+    This is for 2D images.
+    '''
+    
+    elastix_object = elastix_multimap_registration(fixed_image, moving_image)
     image = elastix_object.GetOutput()
     
     itk.imwrite(image, "./final_image.nii")
@@ -357,7 +421,7 @@ def test_2D_elastix_registration(fixed_image, moving_image):
     
 
     
-# 3D Registration
+# 3D Multmap Registration
 
 @given(fixed_image = cubic_image_strategy(), moving_image = poligon_image_strategy())
 @settings(max_examples=20, deadline = None)
@@ -368,7 +432,7 @@ def test_3D_elastix_registration(fixed_image, moving_image):
     This is for 3D images.
     '''
   
-    elastix_object = elastix_registration(fixed_image, moving_image)
+    elastix_object = elastix_multimap_registration(fixed_image, moving_image)
     image = elastix_object.GetOutput()
     
     itk.imwrite(image, "./final_image.nii")
@@ -393,7 +457,7 @@ def test_2D_elastix_transform(fixed_image, moving_image):
     '''
     
     #run a registration
-    elastix_object = elastix_registration(fixed_image, moving_image)
+    elastix_object = elastix_multimap_registration(fixed_image, moving_image)
     
     registered_image = elastix_object.GetOutput()
     
@@ -435,7 +499,7 @@ def test_3D_elastix_transform(fixed_image, moving_image):
     '''
     
     #run a registration
-    elastix_object = elastix_registration(fixed_image, moving_image)
+    elastix_object = elastix_multimap_registration(fixed_image, moving_image)
     
     registered_image = elastix_object.GetOutput()
     

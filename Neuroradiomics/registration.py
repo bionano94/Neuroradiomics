@@ -39,11 +39,61 @@ def registration_reader (fixed_image_filename, moving_image_filename):
     
     return fixed_image, moving_image;
     
-#####
-#REGISTRATION FUNCTION
+    
+    
+#############################
+# Rigid REGISTRATION FUNCTION
 
-def elastix_registration(fixed_image, moving_image, clog_value = False):
-    """This function do the registration of a moving image over a fixed image.
+def elastix_rigid_registration(fixed_image, moving_image, clog_value = False):
+    """This function do the registration of a moving image over a fixed image using a RIGID parameter map.
+    
+    Args:
+    
+        fixed_image : itk.F object 
+                    Image over the registration have to be done
+                    
+        moving_image : itk.F object
+                    Image that has to be registered
+                    
+        clog_value : boolean object.
+                    Default is False. If true it can be seen the Log_To_Console of the Elastix Registration.
+        
+    Returns:
+        elastix_object : elastix object
+                    Resulting elastix object after the registration   
+                   
+    
+    """
+    
+    #This registration will be done using 3 different type of transformation in subsequent order
+    
+    # Setting our number of resolutions
+    parameter_object = itk.ParameterObject.New()
+    resolutions = 4
+    
+    #Import RIGID parameter map
+    parameter_map_rigid = parameter_object.GetDefaultParameterMap('rigid', resolutions)
+    parameter_map_rigid['Metric']       = ['AdvancedMattesMutualInformation']
+    parameter_map_rigid['Interpolator'] = ['BSplineInterpolatorFloat']
+    
+    parameter_object.AddParameterMap(parameter_map_rigid)
+    
+    
+    #Now we start the registration
+    elastix_object = itk.ElastixRegistrationMethod.New(fixed_image, moving_image)
+    elastix_object.SetParameterObject(parameter_object)
+    elastix_object.SetLogToConsole(clog_value)
+    elastix_object.UpdateLargestPossibleRegion()
+    
+    print("The Rigid Registration is done!")
+    
+    return elastix_object
+
+################################
+# Multimap REGISTRATION FUNCTION
+
+def elastix_multimap_registration(fixed_image, moving_image, clog_value = False):
+    """This function do the registration of a moving image over a fixed image using 3 sets of parameters map: Rigid, Affine, BSpline.
     
     Args:
     
@@ -96,14 +146,8 @@ def elastix_registration(fixed_image, moving_image, clog_value = False):
     elastix_object.SetParameterObject(parameter_object)
     elastix_object.SetLogToConsole(clog_value)
     elastix_object.UpdateLargestPossibleRegion()
-
     
-#    registered_image, result_transform_parameters = itk.elastix_registration_method(
-#    fixed_image, moving_image,
-#    parameter_object = parameter_object,
-#    log_to_console = clog_value)
-    
-    print("The Registration is done!")
+    print("The Multimap Registration is done!")
     
     return elastix_object
 
@@ -111,17 +155,20 @@ def elastix_registration(fixed_image, moving_image, clog_value = False):
 #####
 #IMAGE WRITER
 
-def registration_writer(elastix_object, path = './'):
+def registration_writer(elastix_object, path = './', image_name = 'registered_image'):
     
-    """This creates a directory and save in it an itk image as a nifti image as "registered_image.nii" and 3 txt files with the final_transformation_parameters.
+    """This creates a directory and save in it an itk image as a nifti image and 3 txt files with the final_transformation_parameters.
         
         Args:
         
             elstix_object : elastix object
                 The final elastix object with the registration image and the final transformation parameters in it.
+            
+            image_name : string
+                The name of the registered file without the extension. Default is "registered_image"
                 
             file_path : string
-                Path where will be the directory in which the image will be saved
+                Path where will be the directory in which the image will be saved. Default is "./"
          
          
          
@@ -135,7 +182,7 @@ def registration_writer(elastix_object, path = './'):
     #name of the directory
     dir_name = 'Registration_'+now
     
-    dir_path = path + dir_name
+    dir_path = path + "/"  + dir_name
     
     if not os.path.exists(dir_path):
         os.mkdir(dir_path)
@@ -145,7 +192,7 @@ def registration_writer(elastix_object, path = './'):
     
     image = elastix_object.GetOutput()
         
-    itk.imwrite(image, dir_path + "/registered_image.nii")
+    itk.imwrite(image, dir_path + "/"+ image_name +".nii")
     
     print("Your files are written")
    
