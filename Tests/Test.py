@@ -271,7 +271,7 @@ def test_read_transformation(fixed_image, moving_image):
     elastix_object = elastix_multimap_registration(fixed_image, moving_image)
     
     registered_image = elastix_object.GetOutput()
-    final_tranf_params = elastix_object.GetTransformParameterObject()
+    final_transf_params = elastix_object.GetTransformParameterObject()
     
     #write the registration and its parameters
     dir_path = registration_writer(elastix_object)
@@ -282,7 +282,7 @@ def test_read_transformation(fixed_image, moving_image):
     transform_params = read_transform_from_files('./')
     
     #apply the transformation over the same image with the 2 parameter objects
-    direct_transf = itk.transformix_filter(moving_image, final_tranf_params)
+    direct_transf = itk.transformix_filter(moving_image, final_transf_params)
     my_transf = itk.transformix_filter(moving_image, transform_params)
     
     #delete everything was created

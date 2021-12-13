@@ -6,7 +6,7 @@ from tkinter import filedialog
 
 #GRAPHIC INTERFACE TO SET THE READER AND THE WRITER
 
-def Graphical_setter():
+def graphical_setter():
     """This function opens some dialog windows to let choose the user the fixed image,
      the moving image and the path of the output file.
         
