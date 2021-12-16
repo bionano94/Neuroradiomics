@@ -45,7 +45,7 @@ def registration_reader (fixed_image_filename, moving_image_filename):
 #############################
 # Rigid REGISTRATION FUNCTION
 
-def elastix_rigid_registration(fixed_image, moving_image, clog_value = False, flog_value = False):
+def elastix_rigid_registration(fixed_image, moving_image, clog_value = False):
     """This function do the registration of a moving image over a fixed image using a RIGID parameter map.
     
     Args:
@@ -59,10 +59,6 @@ def elastix_rigid_registration(fixed_image, moving_image, clog_value = False, fl
         clog_value : boolean object.
                     Default is False. If true it can be seen the Log_To_Console of the Elastix Registration.
                     
-                    
-        flog_value : boolean object.
-                    Default is False. If true it can be seen the Log_To_File of the Elastix Registration.
-        
     Returns:
         elastix_object : elastix object
                     Resulting elastix object after the registration   
@@ -88,7 +84,6 @@ def elastix_rigid_registration(fixed_image, moving_image, clog_value = False, fl
     elastix_object = itk.ElastixRegistrationMethod.New(fixed_image, moving_image)
     elastix_object.SetParameterObject(parameter_object)
     elastix_object.SetLogToConsole(clog_value)
-    elastix_object.SetLogToFile(flog_value)
     
     
     elastix_object.UpdateLargestPossibleRegion()
@@ -100,7 +95,7 @@ def elastix_rigid_registration(fixed_image, moving_image, clog_value = False, fl
 ################################
 # Multimap REGISTRATION FUNCTION
 
-def elastix_multimap_registration(fixed_image, moving_image, clog_value = False, flog_value = False):
+def elastix_multimap_registration(fixed_image, moving_image, clog_value = False):
     """This function do the registration of a moving image over a fixed image using 3 sets of parameters map: Rigid, Affine, BSpline.
     
     Args:
@@ -113,9 +108,6 @@ def elastix_multimap_registration(fixed_image, moving_image, clog_value = False,
                     
         clog_value : boolean object.
                     Default is False. If true it can be seen the Log_To_Console of the Elastix Registration.
-                    
-        flog_value : boolean object.
-                    Default is False. If true it can be seen the Log_To_File of the Elastix Registration.
         
     Returns:
         elastix_object : elastix object
@@ -156,7 +148,8 @@ def elastix_multimap_registration(fixed_image, moving_image, clog_value = False,
     elastix_object = itk.ElastixRegistrationMethod.New(fixed_image, moving_image)
     elastix_object.SetParameterObject(parameter_object)
     elastix_object.SetLogToConsole(clog_value)
-    elastix_object.SetLogToFile(flog_value)
+    
+    
     elastix_object.UpdateLargestPossibleRegion()
     
     print("The Multimap Registration is done!")
@@ -207,7 +200,7 @@ def registration_writer(elastix_object, path = './', image_name = 'registered_im
         parameter_map = elastix_object.GetTransformParameterObject().GetParameterMap(index)
         elastix_object.GetTransformParameterObject().WriteParameterFile(parameter_map, dir_path + "/TransformParameters.{0}.txt".format(index))
     
-    image = new_elastix_object.GetOutput()
+    image = elastix_object.GetOutput()
         
     itk.imwrite(image, dir_path + "/"+ image_name +".nii")
     
@@ -220,7 +213,7 @@ def registration_writer(elastix_object, path = './', image_name = 'registered_im
 
 
 
-def elastix_transform_parameters_writer(elastix_object, path ='./' ):
+def registration_transform_parameters_writer(elastix_object, path ='./'):
     
     """This creates a directory and save in it the txt file(s) with the final_transformation_parameters.
         
@@ -346,15 +339,17 @@ def read_transform_from_files(transform_path):
     '''
     This function simply read a transformation from files in a directory
     
-    Args:
+    Parameters
+    ----------
             
-        transform_path : string
-            The path to the directory with the Transformation files you want to apply
+    transform_path : string
+        The path to the directory with the Transformation files you want to apply
             
-    Returns:
+    Returns
+    -------
     
-        transform : Elastix ParameterMap
-            The transormation parameters
+    transform : Elastix ParameterMap
+        The transormation parameters
     '''
     
     
@@ -401,3 +396,45 @@ def Set_sampler_parameters_as_image(params_file, image):
     
     
     return params_file
+
+
+
+#EVALUATION
+def evaluate_registration_mse(fixed_image, deformed_image, ax = None):
+    """
+    This function normalizes the image arrays and find the MSE between the 2 images. It's useful to ealuate the registration
+    
+    Parameters
+    ----------
+    
+    fixed_image : itk image object
+        The fixed image of your registration
+        
+    
+    deformed_image : itk image object
+        The result of your registration
+        
+        
+    ax : boolean or int
+        The axis you want to compute the mean of the squares on: 0 on columns, 1 on rows.
+        Default is None: the mean of the flattered array
+        
+        
+    Returns
+    -------
+    
+    mse : float object
+        The calcuated mse
+    """
+    
+    fix_im_array = itk.GetArrayFromImage(fixed_image)
+    def_im_array = itk.GetArrayFromImage(deformed_image)
+    
+    norm_fix = fix_im_array/fix_im_array.max()
+    norm_def = def_im_array/def_im_array.max()
+    
+    mse = np.mean( np.square( norm_fix - norm_def ), axis = ax)
+    
+    
+    return mse
+
