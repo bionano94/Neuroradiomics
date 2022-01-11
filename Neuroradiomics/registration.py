@@ -76,6 +76,7 @@ def elastix_rigid_registration(fixed_image, moving_image, clog_value = False):
     parameter_map_rigid = parameter_object.GetDefaultParameterMap('rigid', resolutions)
     parameter_map_rigid['Metric']       = ['AdvancedMattesMutualInformation']
     parameter_map_rigid['Interpolator'] = ['BSplineInterpolatorFloat']
+  #  parameter_map_rigid['ShowExactMetricValue'] = ['false', 'false', 'false', 'true']
     
     parameter_object.AddParameterMap(parameter_map_rigid)
     
@@ -126,6 +127,8 @@ def elastix_multimap_registration(fixed_image, moving_image, clog_value = False)
     parameter_map_rigid = parameter_object.GetDefaultParameterMap('rigid', resolutions)
     parameter_map_rigid['Metric']       = ['AdvancedMattesMutualInformation']
     parameter_map_rigid['Interpolator'] = ['BSplineInterpolatorFloat']
+  #  parameter_map_rigid['ShowExactMetricValue'] = ['false', 'false', 'false', 'true']
+
     
     parameter_object.AddParameterMap(parameter_map_rigid)
     
@@ -134,6 +137,8 @@ def elastix_multimap_registration(fixed_image, moving_image, clog_value = False)
     parameter_map_affine = parameter_object.GetDefaultParameterMap("affine", resolutions)
     parameter_map_affine['Metric']       = ['AdvancedMattesMutualInformation']
     parameter_map_affine['Interpolator'] = ['BSplineInterpolatorFloat']
+  #  parameter_map_affine['ShowExactMetricValue'] = ['false', 'false', 'false', 'true']
+
 
     parameter_object.AddParameterMap(parameter_map_affine)
     
@@ -141,6 +146,10 @@ def elastix_multimap_registration(fixed_image, moving_image, clog_value = False)
     #Adding a NON-RIGID parameter map
     parameter_map_bspline = parameter_object.GetDefaultParameterMap("bspline", resolutions)
     parameter_map_bspline['Interpolator'] = ['BSplineInterpolatorFloat']
+  #  parameter_map_bspline['ShowExactMetricValue'] = ['false', 'false', 'false', 'true']
+
+    
+    
     parameter_object.AddParameterMap(parameter_map_bspline)
     
     
@@ -275,8 +284,8 @@ def transform_parameters_writer(params_obj, path ='./' ):
         Returns
         -------
         
-            dir_path : string
-                Path of the created directory
+        dir_path : string
+            Path of the created directory
     """
     
     #find the actual date and time
@@ -307,17 +316,18 @@ def apply_transform_from_files(image, transform_path):
     '''
     This function  apply the transformation from files in a directory to other images
     
-    Args:
-    
-        image : itk object
+    Parameters
+    ----------
+    image : itk object
             The image you want to transform
             
-        transform_path : string
+    transform_path : string
             The path to the directory with the Transformation files you want to apply
             
-    Returns:
+    Returns
+    -------
     
-        result_image : itk object
+    result_image : itk object
             The transformed image
     '''
     
@@ -402,7 +412,7 @@ def Set_sampler_parameters_as_image(params_file, image):
 #EVALUATION
 def evaluate_registration_mse(fixed_image, deformed_image, ax = None):
     """
-    This function normalizes the image arrays and find the MSE between the 2 images. It's useful to ealuate the registration
+    This function find the MSE between the 2 images. It's useful to ealuate the registration
     
     Parameters
     ----------
@@ -430,10 +440,8 @@ def evaluate_registration_mse(fixed_image, deformed_image, ax = None):
     fix_im_array = itk.GetArrayFromImage(fixed_image)
     def_im_array = itk.GetArrayFromImage(deformed_image)
     
-    norm_fix = fix_im_array/fix_im_array.max()
-    norm_def = def_im_array/def_im_array.max()
     
-    mse = np.mean( np.square( norm_fix - norm_def ), axis = ax)
+    mse = np.mean( np.square( fix_im_array - def_im_array ), axis = ax)
     
     
     return mse

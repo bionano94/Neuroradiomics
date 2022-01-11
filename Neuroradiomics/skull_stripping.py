@@ -1,44 +1,44 @@
 import itk
 import numpy
 
-def skull_stripper(image, atlas, mask):
-    """
+
+def negative_3d_masking (image, mask):
+    '''
+    This function apply the negative of the image loaded as "mask" to a 3D image.
     
-    """
-    InputType = itk.Image[itk.F, 3]
-    OutputType = itk.Image[itk.SS, 3]
-    cast_filter = itk.CastImageFilter[InputType, OutputType].New()
+    Parameters
+    ----------
+        image: 3D itk object.
+                The image you want to apply the mask on.
+        
+        mask: 3D itk object.
+                The binary image of the mask you want to apply.
     
-    cast_filter.SetInput(image)
-    cast_image = cast_filter.GetOutput()
+    Returns
+    -------
+        masked_image: 3D itk object.
+                        The masked image.
+    '''
     
-    cast_filter.SetInput(atlas)
-    cast_atlas = cast_filter.GetOutput()
+    Dimension = 3
     
+    masked_image = itk.Image[itk.F, Dimension].New()
     
-    OutputType = itk.Image[itk.UC, 3]
-    cast_filter = itk.CastImageFilter[InputType, OutputType].New()
+    masked_image.SetRegions(image.GetLargestPossibleRegion())
+    masked_image.Allocate()
     
-    cast_filter.SetInput(mask)
-    cast_mask = cast_filter.GetOutput()
+    index = itk.Index[Dimension]()
     
-    strip_filter = itk.StripTsImageFilter.New()
-    strip_filter.SetInput(cast_image)
-    strip_filter.SetAtlasImage(cast_atlas)
-    strip_filter.SetAtlasBrainMask(cast_mask)
-    strip_filter.UpdateLargestPossibleRegion()
+    for index[0] in range( mask.GetLargestPossibleRegion().GetSize()[0] ):
     
-    print('Strip Filter Updated')
+        for index[1] in range( mask.GetLargestPossibleRegion().GetSize()[1] ):
+        
+            for index[2] in range( mask.GetLargestPossibleRegion().GetSize()[2] ):
+            
+                if mask.GetPixel(index) < 1e-01:
+                    masked_image.SetPixel(index, 0)
+                else: 
+                    masked_image.SetPixel(index, image.GetPixel(index))
+                
     
-    mask_filter = itk.MaskImageFilter.New()    
-    mask_filter.SetInput1(image)
-    mask_filter.SetInput2(strip_filter.GetOutput())
-    mask_filter.Update()
-    
-    print('Stripping Ready')
-    
-    brain = mask_filter.GetOutput()
-    
-    print('Stripping Done')
-    
-    return brain
+    return masked_image

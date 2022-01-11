@@ -17,7 +17,7 @@ from Neuroradiomics.registration import Set_sampler_parameters_as_image
 from Neuroradiomics.registration import transform_parameters_writer
 from Neuroradiomics.registration import registration_transform_parameters_writer
 from Neuroradiomics.registration import evaluate_registration_mse
-
+from Neuroradiomics.skull_stripping import negative_3d_masking
 
 
 
@@ -183,6 +183,56 @@ def rigid_square_image_strategy(draw):
     
     return image
 
+
+@st.composite
+def masking_random_image_strategy(draw):
+    
+    '''
+    This function generates a 3D random itk image
+    '''
+    
+    PixelType = itk.F
+    ImageType = itk.Image[PixelType, 3]
+    Size = (200, 200, 200)
+
+    rndImage = itk.RandomImageSource[ImageType].New()
+    rndImage.SetSize(Size)
+    rndImage.SetNumberOfWorkUnits(1)
+    rndImage.UpdateLargestPossibleRegion()
+
+    return rndImage.GetOutput()
+
+@st.composite
+def masking_cube_mask_strategy(draw):
+    '''
+    This function generates an itk image with a 3D cube of random side. It has to be used as a mask
+    '''
+    
+    x_max = 200
+    y_max = 200
+    z_max = 200
+    image = np.zeros([x_max, y_max, z_max], np.float32)
+    
+    side = draw (st.integers(40,60))
+    x1 = draw (st.integers(10,40))
+    y1 = draw (st.integers(10,40))
+    z1 = draw (st.integers(10,40))
+    x2 = x1 + side
+    y2 = y1 + side
+    z2 = z1 + side
+    
+    for x in range (x1, x2):
+        for y in range (y1, y2):
+            for z in range (z1, z2):
+                image[x,y]=100
+                
+    image = itk.image_view_from_array(image)
+    
+    return image
+                            
+                
+                
+    
 
 
 # ████████ ███████ ███████ ████████ ███████ 
@@ -644,3 +694,32 @@ def test_set_parameters(fixed_image, moving_image):
     
     assert np.all(transformed_image.GetLargestPossibleRegion().GetSize() == moving_image.GetLargestPossibleRegion().GetSize())
     assert np.all(transformed_image.GetSpacing() == moving_image.GetSpacing())
+    
+    
+#negative masking function
+
+@given (image = masking_random_image_strategy(), mask = masking_cube_mask_strategy())
+@settings(max_examples=20, deadline = None)
+def test_negative_masking(image, mask):
+    '''
+    This function tests the negative_3d_masking function
+    '''
+    
+    masked_image = negative_3d_masking(image, mask)
+    
+    index = itk.Index[3]()
+    
+    
+    for index[0] in range( mask.GetLargestPossibleRegion().GetSize()[0] ):
+    
+        for index[1] in range( mask.GetLargestPossibleRegion().GetSize()[1] ):
+        
+            for index[2] in range( mask.GetLargestPossibleRegion().GetSize()[2] ):
+                
+                if mask.GetPixel(index) < 0.5:
+                    assert np.isclose(masked_image.GetPixel(index), 0 )
+                
+ 
+    assert np.all(image.GetLargestPossibleRegion().GetSize() == masked_image.GetLargestPossibleRegion().GetSize())
+    
+    
