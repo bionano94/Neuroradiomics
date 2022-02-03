@@ -17,7 +17,8 @@ from Neuroradiomics.registration import Set_sampler_parameters_as_image
 from Neuroradiomics.registration import transform_parameters_writer
 from Neuroradiomics.registration import registration_transform_parameters_writer
 from Neuroradiomics.registration import evaluate_registration_mse
-from Neuroradiomics.skull_stripping import negative_3d_masking
+from Neuroradiomics.skull_stripping import *
+from Neuroradiomics.normalization import *
 
 
 
@@ -721,5 +722,144 @@ def test_negative_masking(image, mask):
                 
  
     assert np.all(image.GetLargestPossibleRegion().GetSize() == masked_image.GetLargestPossibleRegion().GetSize())
+    assert np.all( image.GetSpacing() == masked_image.GetSpacing() )
+    assert np.all( image.GetOrigin() == masked_image.GetOrigin() )
+    assert np.all( image.GetDirection() == masked_image.GetDirection() )
     
+    
+#masking function
+
+@given (image = masking_random_image_strategy(), mask = masking_cube_mask_strategy())
+@settings(max_examples=20, deadline = None)
+def test_masking(image, mask):
+    '''
+    This function tests the negative_3d_masking function
+    '''
+    
+    masked_image = masking(image, mask)
+    
+    index = itk.Index[3]()
+    
+    
+    for index[0] in range( mask.GetLargestPossibleRegion().GetSize()[0] ):
+    
+        for index[1] in range( mask.GetLargestPossibleRegion().GetSize()[1] ):
+        
+            for index[2] in range( mask.GetLargestPossibleRegion().GetSize()[2] ):
+                
+                if mask.GetPixel(index) > 0.5:
+                    assert np.isclose(masked_image.GetPixel(index), 0 )
+                
+ 
+    assert np.all(image.GetLargestPossibleRegion().GetSize() == masked_image.GetLargestPossibleRegion().GetSize())
+    assert np.all( image.GetSpacing() == masked_image.GetSpacing() )
+    assert np.all( image.GetOrigin() == masked_image.GetOrigin() )
+    assert np.all( image.GetDirection() == masked_image.GetDirection() )
+    
+    
+
+#Binarize
+@given (image = random_image_strategy())
+@settings(max_examples=20, deadline = None)
+def test_binarize(image):
+    '''
+    This function tests the binarize funtion
+    '''
+    
+    bin_image = binarize(image)
+    
+    assert np.all( (itk.GetArrayFromImage(bin_image) == 0) | (itk.GetArrayFromImage(bin_image) == 1) )
+    assert np.all( image.GetSpacing() == bin_image.GetSpacing() )
+    assert np.all( image.GetOrigin() == bin_image.GetOrigin() )
+    assert np.all( image.GetDirection() == bin_image.GetDirection() )
+    
+
+    
+#Thresholding
+@given (image = random_image_strategy(), value = st.floats(0,10))
+@settings(max_examples=20, deadline = None)
+def test_normal_threshold(image, value):
+    '''
+    This function tests the thresholdin funtion
+    '''
+    
+    
+    final_image = normal_threshold(image, value)
+    
+    index = itk.Index[3]()
+    
+    
+    for index[0] in range( image.GetLargestPossibleRegion().GetSize()[0] ):
+    
+        for index[1] in range( image.GetLargestPossibleRegion().GetSize()[1] ):
+        
+            for index[2] in range( image.GetLargestPossibleRegion().GetSize()[2] ):
+                
+                if (image.GetPixel(index) > value or image.GetPixel(index) < -value):
+                    assert np.isclose(final_image.GetPixel(index), 0 )
+                else: assert np.isclose(final_image.GetPixel(index), 1 )
+    
+    assert np.all( (itk.GetArrayFromImage(final_image) == 0) | (itk.GetArrayFromImage(final_image) == 1) )
+    assert np.all( image.GetSpacing() == final_image.GetSpacing() )
+    assert np.all( image.GetOrigin() == final_image.GetOrigin() )
+    assert np.all( image.GetDirection() == final_image.GetDirection() )
+    
+
+#Binay Opening
+@given (image = random_image_strategy())
+@settings(max_examples=20, deadline = None)
+def test_binary_opening(image):
+    '''
+    This function tests the opening function.
+    '''
+    
+    bin_image = binarize(image)
+    
+    dilated_image = binary_opening(bin_image)
+    
+    assert np.all( (itk.GetArrayFromImage(dilated_image) == 0) | (itk.GetArrayFromImage(dilated_image) == 1) )
+    assert np.all( image.GetSpacing() == dilated_image.GetSpacing() )
+    assert np.all( image.GetOrigin() == dilated_image.GetOrigin() )
+    assert np.all( image.GetDirection() == dilated_image.GetDirection() )
+    assert np.all( image.GetLargestPossibleRegion().GetSize() == dilated_image.GetLargestPossibleRegion().GetSize())
+
+    
+#Binary Eroding    
+@given (image = random_image_strategy())
+@settings(max_examples=20, deadline = None)
+def test_binary_eroding(image):
+    '''
+    This function tests the opening function.
+    '''
+    
+    bin_image = binarize(image)
+    
+    eroded_image = binary_eroding(bin_image)
+    
+    assert np.all( (itk.GetArrayFromImage(eroded_image) == 0) | (itk.GetArrayFromImage(eroded_image) == 1) )
+    assert np.all( image.GetSpacing() == eroded_image.GetSpacing() )
+    assert np.all( image.GetOrigin() == eroded_image.GetOrigin() )
+    assert np.all( image.GetDirection() == eroded_image.GetDirection() )
+    assert np.all( image.GetLargestPossibleRegion().GetSize() == eroded_image.GetLargestPossibleRegion().GetSize())
+    
+    
+
+#Largest Connected Region  
+@given (image = random_image_strategy())
+@settings(max_examples=20, deadline = None)
+def test_largest_connected_region(image):
+    '''
+    This function tests the opening function.
+    '''
+    
+    bin_image = binarize(image)
+    
+    final_image = find_largest_connected_region(bin_image)
+    
+    assert np.all( (itk.GetArrayFromImage(final_image) == 0) | (itk.GetArrayFromImage(final_image) == 1) )
+    assert np.all( image.GetSpacing() == final_image.GetSpacing() )
+    assert np.all( image.GetOrigin() == final_image.GetOrigin() )
+    assert np.all( image.GetDirection() == final_image.GetDirection() )
+    assert np.all( image.GetLargestPossibleRegion().GetSize() == final_image.GetLargestPossibleRegion().GetSize())
+    assert np.any( itk.GetArrayFromImage(final_image) == 1 )
     

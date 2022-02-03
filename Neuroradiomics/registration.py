@@ -127,7 +127,7 @@ def elastix_multimap_registration(fixed_image, moving_image, clog_value = False)
     parameter_map_rigid = parameter_object.GetDefaultParameterMap('rigid', resolutions)
     parameter_map_rigid['Metric']       = ['AdvancedMattesMutualInformation']
     parameter_map_rigid['Interpolator'] = ['BSplineInterpolatorFloat']
-  #  parameter_map_rigid['ShowExactMetricValue'] = ['false', 'false', 'false', 'true']
+  
 
     
     parameter_object.AddParameterMap(parameter_map_rigid)
@@ -137,7 +137,6 @@ def elastix_multimap_registration(fixed_image, moving_image, clog_value = False)
     parameter_map_affine = parameter_object.GetDefaultParameterMap("affine", resolutions)
     parameter_map_affine['Metric']       = ['AdvancedMattesMutualInformation']
     parameter_map_affine['Interpolator'] = ['BSplineInterpolatorFloat']
-  #  parameter_map_affine['ShowExactMetricValue'] = ['false', 'false', 'false', 'true']
 
 
     parameter_object.AddParameterMap(parameter_map_affine)
@@ -146,7 +145,7 @@ def elastix_multimap_registration(fixed_image, moving_image, clog_value = False)
     #Adding a NON-RIGID parameter map
     parameter_map_bspline = parameter_object.GetDefaultParameterMap("bspline", resolutions)
     parameter_map_bspline['Interpolator'] = ['BSplineInterpolatorFloat']
-  #  parameter_map_bspline['ShowExactMetricValue'] = ['false', 'false', 'false', 'true']
+    # parameter_map_bspline['WriteIterationInfo'] = ['true']
 
     
     
@@ -407,6 +406,42 @@ def Set_sampler_parameters_as_image(params_file, image):
     
     return params_file
 
+
+#CHANGE AN ATTRIBUTE VALUE OF A TRASFORM
+def Set_parameters_map_attribute(params_file, attribute, value):
+    """
+    This function sets the Size and the Spacing saved in a parameters file as the ones of an other image.
+    
+    Parameters
+    ----------
+    
+    params_file : elastix parameter object
+        The parameters file you want to change
+        
+    attribute : string object
+        The attribute you want to change
+        
+    value : string object
+        the final value you want for the attribute
+        
+    
+    
+    Returns
+    -------
+    
+    params_file : elastix parameter object
+        The parameters file changed
+    
+    """
+    
+    
+   
+    
+    for index in range(params_file.GetNumberOfParameterMaps()):
+        params_file.SetParameter(index, attribute, value)
+    
+    
+    return params_file
 
 
 #EVALUATION

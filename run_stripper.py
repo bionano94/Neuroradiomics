@@ -1,33 +1,63 @@
 import itk
 import numpy
-import tkinter as tk
-from tkinter import filedialog
+import argparse
+from datetime import datetime
 
-from Neuroradiomics.registration import registration_reader
-from Neuroradiomics.registration import elastix_multimap_registration
-from Neuroradiomics.registration import registration_writer
-from Neuroradiomics.registration import apply_transform_from_files
-from Neuroradiomics.registration import read_transform_from_files
-from Neuroradiomics.registration import elastix_rigid_registration
-from Neuroradiomics.graphical_setter import graphical_setter
-from Neuroradiomics.skull_stripping import skull_stripper
 
+
+from Neuroradiomics.skull_stripping import *
+
+
+
+def parse_args():
+    description = 'Automated MRI Brain Image Extraction'
+    parser = argparse.ArgumentParser(description = description)
+
+    parser.add_argument('--image',
+                        dest='image',
+                        required=True,
+                        type=str,
+                        action='store',
+                        help='Head_Image filename')
+    parser.add_argument('--atlas',
+                        dest='atlas',
+                        required=True,
+                        type=str,
+                        action='store',
+                        help='Atlas_Image filename')
+    parser.add_argument('--mask',
+                        dest='mask',
+                        required=True,
+                        type=str,
+                        action='store',
+                        help='brain mask image filename')
+    parser.add_argument('--output',
+                        dest='output',
+                        required=False,
+                        type=str,
+                        default='./',
+                        action='store',
+                        help='Output filepath. Default is ./')
+    
+    args = parser.parse_args()
+    return args
+    
+    
 def main():
-    root = tk.Tk()
-    root.withdraw()
     
-    mask_file = filedialog.askopenfilename(title = "Select the mask image")
-    transform_path = filedialog.askdirectory(title = "Select where are the transform files")
-    mask = itk.imread(mask_file, itk.F)
-    reg_mask = apply_transform_from_files(mask, transform_path)
-    registered_brain_file = filedialog.askopenfilename(title = "Select the image")
-    registered_image = itk.imread(registered_brain_file)
+    # parse the arguments
+    args = parse_args()
     
-    brain = skull_stripper(registered_image, reg_mask)
+    image = itk.imread(args.image, itk.F)
+    atlas = itk.imread(args.atlas, itk.F)
+    mask = itk.imread(args.mask, itk.F)
     
-    output_path = filedialog.askdirectory(title = "Select where you want to save the image")
+    brain = skull_stripper(image, atlas, mask)
     
-    itk.imwrite(brain, output_path)
+    #find the actual date and time
+    now = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
+    
+    itk.imwrite(brain, args.output+'/'+now+'_extracted_brain.nii')
     
 
 if __name__ == '__main__':
