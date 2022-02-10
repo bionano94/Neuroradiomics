@@ -3,6 +3,7 @@ import numpy as np
 
 from Neuroradiomics.normalization import *
 from Neuroradiomics.registration import elastix_multimap_registration
+from Neuroradiomics.resampler import *
 
 
 def negative_3d_masking (image, mask):
@@ -297,6 +298,42 @@ def binary_opening (image, radius=1):
     
     return openingFilter.GetOutput()
 
+def hole_filler(image):
+    '''
+    This function applies an ITK Binary Fillhole Filter to the input binary image
+    
+    Parameters
+    ----------
+        image: itk Image object
+            The input binary image.
+            
+    Returns
+    -------
+        filled_image: itk Image object
+            The image in output of the filter
+    
+    '''
+    
+    #eseguo il cast per essere sicuro che la funzione venga applicata
+    OutputType = itk.Image[itk.SS, 3]
+    cast_filter = itk.CastImageFilter[type(image), OutputType].New()
+    cast_filter.SetInput(image)
+    cast_filter.Update()
+    
+    hole_filler_filter = itk.BinaryFillholeImageFilter[OutputType].New()
+    hole_filler_filter.SetInput(cast_filter.GetOutput())
+    hole_filler_filter.SetForegroundValue(1)
+    hole_filler_filter.Update()
+    
+    #rifaccio il cast in modo da restituire l'immagine dello stesso tipo dell'input
+    cast_filter = itk.CastImageFilter[OutputType, type(image)].New()
+    cast_filter.SetInput(hole_filler_filter.GetOutput())
+    cast_filter.Update()
+    
+    return cast_filter.GetOutput()
+
+
+
 def skull_stripping_mask (image, atlas, mask):
     '''
     This function creates a mask to extract the brain from an head image.
@@ -349,7 +386,7 @@ def skull_stripping_mask (image, atlas, mask):
     normalized_first_brain = cast_filter.GetOutput()
     
     #thresholding the normalized_brain
-    thresholded_first_brain = normal_threshold( normalized_first_brain, 2.5 )
+    thresholded_first_brain = normal_threshold( normalized_first_brain, 3 )
     
     #eroding the mask to better find the largest connected region
     eroded_mask = binary_eroding( thresholded_first_brain )
@@ -357,8 +394,8 @@ def skull_stripping_mask (image, atlas, mask):
     #find the largest connected region
     first_mask = find_largest_connected_region( eroded_mask )
     
-    #apply a dilation to the mask
-    final_mask = binary_opening(first_mask, 2)
+    #apply a dilation to the mask and a hole filler
+    final_mask = hole_filler( binary_opening(first_mask, 2) )
     
     print('Your brain mask is ready!')
     
@@ -391,3 +428,62 @@ def skull_stripper (image, atlas, mask):
     return brain
     
     
+def evaluate_stripping(mask, ground_mask):
+    '''
+    This function evaluate the goodness of a skull stripping mask comparing it to a ground truth mask.
+    
+    Parameters
+    ----------
+        mask = itk Image object
+            The mask you want to evaluate
+            
+        ground_mask = itk Image object
+            The mask you want to use as a ground truth.
+            
+    Returns
+    -------
+        results: tuple
+            A tuple with the results of the measurements:
+             1 = Dice Coefficient
+             2 = Volume Similarity
+             3 = Hausdorff Distance
+             4 = Average Hausdorf Distance
+    '''
+    
+    # Matching the physical space
+    matching_filter = match_physical_spaces (ground_mask, mask)
+    matching_filter.Update()
+    
+    #casting the iages to be used by the filters
+    ImageType = itk.Image[itk.SS, 3]
+    cast_filter = itk.CastImageFilter[type(mask), ImageType].New()
+    cast_filter.SetInput(mask)
+    cast_filter.Update()
+    c_mask = cast_filter.GetOutput()
+
+    cast_filter = itk.CastImageFilter[type(ground_mask), ImageType].New()
+    cast_filter.SetInput( matching_filter.GetOutput() )
+    cast_filter.Update()
+    c_ground_mask = cast_filter.GetOutput()
+    
+    #use the filter to obtain the desired measures
+    overlapping_filter = itk.LabelOverlapMeasuresImageFilter[type(c_mask)].New()
+    overlapping_filter.SetSourceImage(c_mask)
+    overlapping_filter.SetTargetImage(c_ground_mask)
+    overlapping_filter.Update()
+
+    hausdorff_filter = itk.HausdorffDistanceImageFilter[type(c_mask), type(c_ground_mask)].New()
+    hausdorff_filter.SetInput1(c_mask)
+    hausdorff_filter.SetInput2(c_ground_mask)
+    hausdorff_filter.Update()
+    
+    #print the results
+    print ('Dice_Coefficient =', overlapping_filter.GetDiceCoefficient() )
+    print ('Volume_Similarity =', overlapping_filter.GetVolumeSimilarity() )
+    print ('Hausdorff_Distance =', hausdorff_filter.GetHausdorffDistance () )
+    print ('Average_Hausdorff_Distance =', hausdorff_filter.GetAverageHausdorffDistance () )
+    
+    #create a vetor with all the measures
+    results = [overlapping_filter.GetDiceCoefficient(), overlapping_filter.GetVolumeSimilarity(), hausdorff_filter.GetHausdorffDistance (), hausdorff_filter.GetAverageHausdorffDistance ()]
+    
+    return results
