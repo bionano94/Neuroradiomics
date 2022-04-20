@@ -3,4 +3,5 @@ numpy
 itk-elastix
 ipython
 
-itk-skullstripping
+scikit-learn >= 1.0.2
+

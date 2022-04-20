@@ -100,9 +100,9 @@ def masking (image, mask):
 
 
 
-def binarize ( image, low_value = 0.1 ):
+def binarize ( image, low_value = 0.1, hi_value = None ):
     '''
-    This function applies a threshold to an image to binarize it. It only use a low_value to exclude the background.
+    This function applies a threshold to an image to binarize it. It uses a low_value (default = 0.1) to exclude the background and eventually an hi_value.
     
     Parameters
     ----------
@@ -111,6 +111,9 @@ def binarize ( image, low_value = 0.1 ):
         
         low_value: float value
             The low value for the thresholding
+            
+        hi_value: float value
+            The upper value for the thresholding
             
     Return
     ------
@@ -133,6 +136,10 @@ def binarize ( image, low_value = 0.1 ):
         thresholdFilter = itk.BinaryThresholdImageFilter[OutputType, OutputType].New()
         thresholdFilter.SetInput(c_image)
         thresholdFilter.SetLowerThreshold(low_value)
+        
+        if hi_value != None : 
+            thresholdFilter.SetUpperThreshold(hi_value)
+            
         thresholdFilter.SetOutsideValue(0)
         thresholdFilter.SetInsideValue(1)
         thresholdFilter.Update()
@@ -149,6 +156,10 @@ def binarize ( image, low_value = 0.1 ):
         thresholdFilter = itk.BinaryThresholdImageFilter[OutputType, OutputType].New()
         thresholdFilter.SetInput(image)
         thresholdFilter.SetLowerThreshold(low_value)
+        
+        if hi_value != None : 
+            thresholdFilter.SetUpperThreshold(hi_value)
+            
         thresholdFilter.SetOutsideValue(0)
         thresholdFilter.SetInsideValue(1)
         thresholdFilter.Update()
@@ -334,7 +345,7 @@ def hole_filler(image):
 
 
 
-def skull_stripping_mask (image, atlas, mask):
+def skull_stripping_mask (image, atlas, mask, transformation_return = False):
     '''
     This function creates a mask to extract the brain from an head image.
     
@@ -349,10 +360,16 @@ def skull_stripping_mask (image, atlas, mask):
         mask: itk image object
             Binary mask of the brain for the atlas.
             
+        transformation_return: boolean parameter. Default is False.
+            If True the function returns also the transformation parameters of the registration.
+            
     Returns
     -------
         brain_mask: itk image object
             A binary image with the brain mask for the image in input.
+            
+        Transformation_parameters: elastix transformation object.
+            The transformation parameters of the registration. Returned only if transformation_return is set to True.
     '''
     
     reg_atlas_obj = elastix_multimap_registration( image, atlas )
@@ -399,8 +416,13 @@ def skull_stripping_mask (image, atlas, mask):
     
     print('Your brain mask is ready!')
     
-    return final_mask
+    if transformation_return == False:
+        return final_mask
+    else:
+        return final_mask, reg_atlas_obj.GetTransformParameterObject()
 
+    
+    
 def skull_stripper (image, atlas, mask):
     '''
     This function extract the brain from an head image.

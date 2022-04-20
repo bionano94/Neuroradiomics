@@ -16,7 +16,8 @@ import glob
 def registration_reader (fixed_image_filename, moving_image_filename):
     """This function load 2 images from their path and return 2 ITK objects.
         
-        Args:
+        Parameters
+        ----------
         
             fixed_image_filename : string
                         Filename of the fixed image
@@ -24,7 +25,8 @@ def registration_reader (fixed_image_filename, moving_image_filename):
             moving_image_filename : string
                         Filename of the moving image
             
-        Returns:
+        Return
+        ------
         
             fixed_image : itk.F object
                         The fixed image
@@ -48,7 +50,8 @@ def registration_reader (fixed_image_filename, moving_image_filename):
 def elastix_rigid_registration(fixed_image, moving_image, clog_value = False):
     """This function do the registration of a moving image over a fixed image using a RIGID parameter map.
     
-    Args:
+    Parameters
+    ----------
     
         fixed_image : itk.F object 
                     Image over the registration have to be done
@@ -59,7 +62,8 @@ def elastix_rigid_registration(fixed_image, moving_image, clog_value = False):
         clog_value : boolean object.
                     Default is False. If true it can be seen the Log_To_Console of the Elastix Registration.
                     
-    Returns:
+    Returns
+    -------
         elastix_object : elastix object
                     Resulting elastix object after the registration   
                    
@@ -99,7 +103,8 @@ def elastix_rigid_registration(fixed_image, moving_image, clog_value = False):
 def elastix_multimap_registration(fixed_image, moving_image, clog_value = False):
     """This function do the registration of a moving image over a fixed image using 3 sets of parameters map: Rigid, Affine, BSpline.
     
-    Args:
+    Parameters
+    ----------
     
         fixed_image : itk.F object 
                     Image over the registration have to be done
@@ -110,7 +115,8 @@ def elastix_multimap_registration(fixed_image, moving_image, clog_value = False)
         clog_value : boolean object.
                     Default is False. If true it can be seen the Log_To_Console of the Elastix Registration.
         
-    Returns:
+    Returns
+    -------
         elastix_object : elastix object
                     Resulting elastix object after the registration   
                    

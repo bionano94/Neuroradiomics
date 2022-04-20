@@ -74,8 +74,8 @@ def itk_gaussian_normalization( image, mask, label = 1 ):
 
     stats = itk_label_shape_statistics( image, mask )
     _ = stats.Update()
-    shift = -stats.GetMean( 1 )
-    scale = 1. / abs( stats.GetSigma(1) )
+    shift = -stats.GetMean( label )
+    scale = 1. / abs( stats.GetSigma( label ) )
     normalized = itk_shift_scale( image, shift = shift, scale = scale )
 
     return normalized
