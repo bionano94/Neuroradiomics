@@ -63,7 +63,7 @@ VERSION = None
 KEYWORDS = 'radiomics brain brain-extraction skull-stripping segmentation'
 REQUIREMENTS_FILENAME = os.path.join(here, 'requirements.txt')
 VERSION_FILENAME = os.path.join(here, 'Neuroradiomics', '__version__.py')
-# README_FILENAME = os.path.join(here, 'README.md') waiting for the ReadMe to be written
+README_FILENAME = os.path.join(here, 'README.md')
 
 # Import the README and use it as the long-description.
 # Note: this will only work if 'README.md' is present in your MANIFEST.in file!
