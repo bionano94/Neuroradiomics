@@ -7,6 +7,7 @@ try:
 except ImportError:
   from distutils.core import setup
   from distutils.core import find_packages
+  
 
 def get_requires (requirements_filename):
   '''
