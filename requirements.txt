@@ -2,6 +2,5 @@ itk >= 5.1.0
 numpy
 itk-elastix
 ipython
-
 scikit-learn
 
