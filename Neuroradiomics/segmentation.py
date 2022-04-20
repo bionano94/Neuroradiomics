@@ -105,18 +105,25 @@ def de_indexing (image_array, index_array, reference_image, first_label_value = 
     image.SetDirection( reference_image.GetDirection() )
     image.Allocate()
     
-    for i in range(len(index_array)):
-        #Set the itk index as the i_th index of the index_array
-            index[0] = int( index_array[i][0] )
-            index[1] = int( index_array[i][1] )
-            index[2] = int( index_array[i][2] )
+    if first_label_value != None:
+        for i in range(len(index_array)):
+            #Set the itk index as the i_th index of the index_array
+                index[0] = int( index_array[i][0] )
+                index[1] = int( index_array[i][1] )
+                index[2] = int( index_array[i][2] )
             
             #Set the Pixel value of the image as the one in the array
-            if first_label_value != None:
                 image.SetPixel( index, int(image_array[i]) + first_label_value )
-            else:
+    else:
+        for i in range(len(index_array)):
+            #Set the itk index as the i_th index of the index_array
+                index[0] = int( index_array[i][0] )
+                index[1] = int( index_array[i][1] )
+                index[2] = int( index_array[i][2] )
+            
+            #Set the Pixel value of the image as the one in the array
                 image.SetPixel( index, int(image_array[i]) )
-                
+           
     return image
 
     
