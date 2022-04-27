@@ -453,7 +453,7 @@ def Set_parameters_map_attribute(params_file, attribute, value):
 #EVALUATION
 def evaluate_registration_mse(fixed_image, deformed_image, ax = None):
     """
-    This function find the MSE between the 2 images. It's useful to ealuate the registration
+    This function find the MSE between the 2 images. It's useful to evaluate the registration
     
     Parameters
     ----------
