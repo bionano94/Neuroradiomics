@@ -127,3 +127,143 @@ def de_indexing (image_array, index_array, reference_image, first_label_value = 
     return image
 
     
+
+#####################
+# Weights Functions #
+#####################
+    
+    
+#Three Classes Weights
+    
+def find_prob_weights (wm_mask, gm_mask, csf_mask):
+    '''
+    This function finds the proportions of the sizes of the white matter, grey matter mask, and csf mask of a brain.
+    
+    Parameters
+    ----------
+        wm_mask: itk image
+            The wm mask.
+        
+        gm_mask: itk image
+            The gm mask.
+            
+        csf_mask: itk image
+            The csf mask.
+    
+    Return
+    ------
+        weigths: 1D list of floats.
+            A list with the weights of the wm [0], gm [1], csf[2]. The sum is normalized to 1.
+    
+    '''
+    
+    #Getting arrays from masks
+    wm_array = itk.GetArrayFromImage(wm_mask)
+    gm_array = itk.GetArrayFromImage(gm_mask)
+    csf_array = itk.GetArrayFromImage(csf_mask)
+    
+    #creating a sort of total brain mask summing the masks arrays 
+    tot_array = wm_array + gm_array + csf_array
+    
+    #creating a 4dim array in order to use argmax
+    four_dim_array = [wm_mask, gm_mask, csf_mask]
+    
+    #finding for every pixel which is its most probable type
+    prob_array = np.argmax(four_dim_array, 0)
+    
+    #finding number of pixels for gm and csf
+    gm_pixels = np.count_nonzero(prob_array == 1)
+    csf_pixels = np.count_nonzero(prob_array == 2)
+    
+    #finding the total number of pixels
+    tot_pixel = np.count_nonzero( tot_array ) 
+    
+    #because both background and wm will be labelled as 0, the wm number of pixels is find using subtraction.
+    wm_pixels = tot_pixel - gm_pixels - csf_pixels
+    
+    #finding weights for the masks
+    wm_weight = wm_pixels/tot_pixel
+    gm_weight = gm_pixels/tot_pixel
+    csf_weight = csf_pixels/tot_pixel
+    
+    #creating a list with all the weights.
+    weights = [wm_weight, gm_weight, csf_weight]
+    print ('The estimated weights are: wm = ', weights[0] ,'; gm = ', weights[1] ,'; csf = ', weights[2])
+    
+    return weights
+
+
+#Four Classes weights
+
+def find_prob_4_weights (wm_mask, gm_mask, csf_mask):
+    '''
+    This function finds the proportions of the sizes of the white matter, grey matter mask, and csf mask of a brain, including
+    a fourth class that represents the indecision between white matter and grey matter.
+    
+    Parameters
+    ----------
+        wm_mask: itk image
+            The wm mask.
+        
+        gm_mask: itk image
+            The gm mask.
+            
+        csf_mask: itk image
+            The csf mask.
+    
+    Return
+    ------
+        weigths: 1D list of floats.
+            A list with the weights of the wm [0], gm [1], csf[2], indecision_class[3]. The sum is normalized to 1.
+    
+    '''
+    
+    #Getting arrays from masks
+    wm_array = itk.GetArrayFromImage(wm_mask)
+    gm_array = itk.GetArrayFromImage(gm_mask)
+    csf_array = itk.GetArrayFromImage(csf_mask)
+    idk_array = wm_array + gm_array
+    
+    #setting the rules to decide when a pixel must be classified as uncertain
+    wm_gm_bool = np.logical_or((wm_array > 0.51) , (gm_array > 0.51) )
+    csf_bool = np.logical_and((csf_array > wm_array), (csf_array > gm_array))
+    idk_bool = np.logical_or( wm_gm_bool , csf_bool )
+    
+    #classifing the uncertain pixels.
+    idk_array = np.where(idk_bool, 0, idk_array)
+    
+    
+    #creating a sort of total brain mask summing the masks arrays 
+    tot_array = wm_array + gm_array + csf_array
+    
+    
+    #creating a 4dim array in order to use argmax
+    four_dim_array = [wm_mask, gm_mask, csf_mask, idk_array]
+    
+    #creating a 4dim array in order to use argmax
+    prob_array = np.argmax(four_dim_array, 0)
+    
+    #finding number of pixels for every class
+    gm_pixels = np.count_nonzero(prob_array == 1) 
+    csf_pixels = np.count_nonzero(prob_array == 2)
+    idk_pixels = np.count_nonzero(prob_array == 3)
+    
+    #finding total pixels
+    tot_pixel = np.count_nonzero( tot_array ) 
+    
+    #finding wm number of pixels.
+    wm_pixels = tot_pixel - gm_pixels - csf_pixels - idk_pixels
+    
+    #finding weights.
+    wm_weight = wm_pixels/tot_pixel
+    gm_weight = gm_pixels/tot_pixel
+    csf_weight = csf_pixels/tot_pixel
+    idk_weight = idk_pixels/tot_pixel
+    
+    weights = [wm_weight, gm_weight, csf_weight, idk_weight]
+    print ('The estimated weights are: wm = ', weights[0] ,'; gm = ', weights[1] ,'; csf = ', weights[2], '; undefined = ', weights[3])
+    
+    return weights
+
+
+
