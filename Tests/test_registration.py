@@ -328,7 +328,7 @@ def test_read_transformation(fixed_image, moving_image):
 
 ####### Registration Writer Test
 
-@given(fixed_image = square_image_strategy(), moving_image = rectangular_image_strategy())
+@given(fixed_image = rigid_square_image_strategy(), moving_image = rigid_square_image_strategy())
 @settings(max_examples=20, deadline = None)
 def test_elastix_registration_writer(fixed_image, moving_image):
     '''
@@ -393,8 +393,8 @@ def test_elastix_registration_writer(fixed_image, moving_image):
 ##### Registration parameters writer Test
 
 
-@given(fixed_image = square_image_strategy(), moving_image = rectangular_image_strategy())
-@settings(max_examples=20, deadline = None)
+@given(fixed_image = rigid_square_image_strategy(), moving_image = rigid_square_image_strategy())
+@settings(max_examples=20, deadline = None, suppress_health_check = (HC.too_slow,))
 def test_elastix_transform_registration_writer(fixed_image, moving_image):
     '''
     This function tests if the writer works properly
@@ -457,7 +457,7 @@ def test_elastix_transform_registration_writer(fixed_image, moving_image):
 # 2D Rigid Registration
 
 @given(fixed_image = rigid_square_image_strategy(), moving_image = rigid_square_image_strategy())
-@settings(max_examples=30, deadline = None)
+@settings(max_examples=20, deadline = None, suppress_health_check = (HC.too_slow,))
 def test_2D_elastix_rigid_registration(fixed_image, moving_image):
     
     '''
@@ -482,7 +482,7 @@ def test_2D_elastix_rigid_registration(fixed_image, moving_image):
 # 2D Multimap Registration
 
 @given(fixed_image = square_image_strategy(), moving_image = rectangular_image_strategy())
-@settings(max_examples=20, deadline = None)
+@settings(max_examples=20, deadline = None, suppress_health_check = (HC.too_slow,))
 def test_2D_elastix_multimap_registration(fixed_image, moving_image):
     
     '''
@@ -531,7 +531,7 @@ def test_3D_elastix_registration(fixed_image, moving_image):
 # 2D Transformation
     
 @given(fixed_image = square_image_strategy(), moving_image = rectangular_image_strategy())
-@settings(max_examples=20, deadline = None)
+@settings(max_examples=20, deadline = None, suppress_health_check = (HC.too_slow,))
 def test_2D_elastix_transform(fixed_image, moving_image):
     
     '''
@@ -571,7 +571,7 @@ def test_2D_elastix_transform(fixed_image, moving_image):
 # 3D Transformation
     
 @given(fixed_image = cubic_image_strategy(), moving_image = poligon_image_strategy())
-@settings(max_examples=20, deadline = None)
+@settings(max_examples=20, deadline = None, suppress_health_check = (HC.too_slow,))
 def test_3D_elastix_transform(fixed_image, moving_image):
     
     '''

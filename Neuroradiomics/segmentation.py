@@ -261,9 +261,298 @@ def find_prob_4_weights (wm_mask, gm_mask, csf_mask):
     idk_weight = idk_pixels/tot_pixel
     
     weights = [wm_weight, gm_weight, csf_weight, idk_weight]
-    print ('The estimated weights are: wm = ', weights[0] ,'; gm = ', weights[1] ,'; csf = ', weights[2], '; undefined = ', weights[3])
+    print ('The estimated weights are: wm = ', weights[0] ,'; gm = ', weights[1] ,'; csf = ', weights[2], '; uncertains = ', weights[3])
     
     return weights
 
 
 
+
+###################
+# Means Functions #
+###################
+
+def gaussian_pixel_distribution_params_evaluation (image, label):
+    '''
+    This function finds mean and standard deviation for the pixels of an image under a mask.
+    
+    Parameters
+    ----------
+        image: itk image object.
+            The image you want to evaluate the parameters of.
+            
+        label: itk image object. Must be binary.
+            The mask you want to use. Only pixels under it will be evaluated.
+            
+    Returns
+    -------
+        results: list of float.
+            results[0] = mean value. results[1] = standard eviation
+    '''
+   
+    OutputType = itk.Image[itk.US, 3]
+    cast_filter = itk.CastImageFilter[type(image), OutputType].New()
+    cast_filter.SetInput(image)
+    cast_filter.Update()
+    cast_image = cast_filter.GetOutput()
+
+    cast_filter = itk.CastImageFilter[type(label), OutputType].New()
+    cast_filter.SetInput(label)
+    cast_filter.Update()
+    cast_label = cast_filter.GetOutput()
+    
+    label_filter = itk_label_shape_statistics(cast_image, cast_label)
+    label_filter.Update()
+    
+    results = [label_filter.GetMean(1), label_filter.GetSigma(1)]
+    
+    return results
+
+
+def find_means (brain, wm_mask, gm_mask, csf_mask, prob_threshold = 0.51):
+    '''
+    This function finds a rough mean for the masked pixels.
+    
+    Parameters
+    ----------
+        brain: itk image object.
+            The brain image of which you want to evaluate the means values.
+            
+        wm_mask: itk image object. Must be binary.
+            The probability mask for the wm.
+            
+        gm_mask: itk image object. Must be binary.
+            The probability mask for the gm.
+            
+        csf_mask: itk image object. Must be binary.
+            The probability mask for the csf.
+            
+        prob_threshold: float value.
+            The min value of probability you want to consider as valid. Default is 0.51
+            
+    
+    Returns
+    -------
+        means: list of float.
+            The evaluated means.
+            means[0] = wm_mean
+            means[1] = gm_mean
+            means[2] = csf_mean
+    '''
+    
+    min_wm = binarize(wm_mask, prob_threshold)
+    min_gm = binarize(gm_mask, prob_threshold)
+    min_csf = binarize(csf_mask, prob_threshold)
+    
+    wm_mean = gaussian_pixel_distribution_params_evaluation(brain, min_wm)[0]
+    gm_mean = gaussian_pixel_distribution_params_evaluation(brain, min_gm)[0]
+    csf_mean = gaussian_pixel_distribution_params_evaluation(brain, min_csf)[0]
+    
+    means = [wm_mean, gm_mean, csf_mean]
+    
+    print ('The estimated means are: wm = ', means[0] ,'; gm = ', means[1] ,'; csf = ' , means[2])
+    
+    return means
+
+
+def find_4_means (brain, wm_mask, gm_mask, csf_mask, prob_threshold = 0.51):
+    '''
+    This function finds a rough mean for the masked pixels. This is useful for the 4 class segmentation, with the uncerain pixels. (not sure if wm or gm)
+    
+    Parameters
+    ----------
+        brain: itk image object.
+            The brain image of which you want to evaluate the means values.
+            
+        wm_mask: itk image object. Must be binary.
+            The probability mask for the wm.
+            
+        gm_mask: itk image object. Must be binary.
+            The probability mask for the gm.
+            
+        csf_mask: itk image object. Must be binary.
+            The probability mask for the csf.
+            
+        prob_threshold: float value.
+            The min value of probability you want to consider as valid. Default is 0.51
+            
+    
+    Returns
+    -------
+        means: list of float.
+            The evaluated means.
+            means[0] = wm_mean
+            means[1] = gm_mean
+            means[2] = csf_mean
+            means[3] = uncertain_mean
+    '''
+    
+    min_wm = binarize(wm_mask, prob_threshold)
+    min_gm = binarize(gm_mask, prob_threshold)
+    min_csf = binarize(csf_mask, prob_threshold)
+    idk = binarize(wm_mask, 0.1, prob_threshold)
+    
+    wm_mean = gaussian_pixel_distribution_params_evaluation(brain, min_wm)[0]
+    gm_mean = gaussian_pixel_distribution_params_evaluation(brain, min_gm)[0]
+    csf_mean = gaussian_pixel_distribution_params_evaluation(brain, min_csf)[0]
+    idk_mean = gaussian_pixel_distribution_params_evaluation(brain, idk)[0]
+    
+    means = [wm_mean, gm_mean, csf_mean, idk_mean]
+    
+    print ('The estimated means are: wm = ', means[0] ,'; gm = ', means[1] ,'; csf = ' , means[2], '; uncertains = ', means[3])
+    
+    return means
+
+
+
+
+#########################
+# Segmentation Function #
+#########################
+
+
+def brain_segmentation ( brain, wm_mask, gm_mask, csf_mask, undefined = False ):
+    '''
+    This function segment a brain image.
+    
+    Parameters
+    ----------
+        brain: itk image object
+            The brain image. The brain must be already extracted.
+            
+        wm_mask: itk image object.
+            The wm probability mask. It must be already in the brain space and it must be masked with the same brain
+            mask of the brain.
+            
+        gm_mask: itk image object.
+            The gm probability mask. It must be already in the brain space and it must be masked with the same brain
+            mask of the brain.
+            
+        csf_mask: itk image object.
+            The csf probability mask. It must be already in the brain space and it must be masked with the same brain
+            mask of the brain.
+        
+        undefined: boolean. Default = False.
+            It True the segmentation will find also a fourth classe with the not certain pixels.
+            
+    Returns
+    -------
+        label_image: itk image object.
+            The label image.
+            0 is background
+            1 is wm
+            2 is gm
+            3 is csf
+            Is unceratain is setted to True 4 are the uncrain pixels.
+    
+    '''
+    
+    #linearize and indexing the brain obtaining the image array and the index array
+    #(the index array is useful to build the itk label image
+    brain_array, index_array = indexing (brain, brain_mask)
+    
+    
+    #defining the model to be used to the segmentation
+    if  undefined :
+        n_classes = 4
+        model = GaussianMixture(
+                        n_components = n_classes,
+                        covariance_type = 'full',
+                        tol = 0.01,
+                        max_iter = 10000,
+                        means_init = np.reshape( find_4_means ( brain, wm_mask, gm_mask, csf_mask), (-1,1) ),
+                        weights_init = find_4_weights (wm_mask, gm_mask, csf_mask) 
+                        )
+            
+    else:
+        n_classes = 3
+        model = GaussianMixture(
+                        n_components = n_classes,
+                        covariance_type = 'full',
+                        tol = 0.01,
+                        max_iter = 1000,
+                        means_init = np.reshape( find_means ( brain, wm_mask, gm_mask, csf_mask), (-1,1) ),
+                        weights_init = find_prob_weights (wm_mask, gm_mask, csf_mask) 
+                        )
+            
+    
+    #updatin the funtion to find the labels
+    model.fit( np.reshape( brain_array, (-1,1) ) )
+    label_array = model.predict( np.reshape( brain_array, (-1,1) ) )
+    
+    #transformin the label array into an image. The 1st label value is 1 so wm is 1 and only bg is 0.
+    label_image = label_de_indexing (label_array, index_array, brain, 1)
+    
+    print ('Your Brain is segmented')
+    
+    return label_image
+
+
+
+
+
+#############
+# Utilities #
+#############
+
+def label_selection (label_image, value):
+    '''
+    This function select only a label value from a label image.
+    
+    Parameters
+    ----------
+        label_image: itk image object
+            The label image obtained from a segmentation
+            
+        value: int value.
+            The value of the label you want to isolate.
+            
+    Returns
+    -------
+        selected_label: itk image object
+            The image with only the label of the selected value.
+    '''
+    
+    #Check if the itk types are corrected
+    OutputType = itk.Image[itk.F, 3]
+    
+    if type(label_image) != OutputType:
+        
+        #eseguo il cast per essere sicuro che la funzione venga applicata
+        cast_filter = itk.CastImageFilter[type(label_image), OutputType].New()
+        cast_filter.SetInput(label_image)
+        cast_filter.Update()
+        c_image = cast_filter.GetOutput()
+    
+        #applico la thresholding
+        thresholdFilter = itk.BinaryThresholdImageFilter[OutputType, OutputType].New()
+        thresholdFilter.SetInput(c_image)
+        thresholdFilter.SetLowerThreshold( value - 0.5 )
+        thresholdFilter.SetUpperThreshold( value + 0.5)
+        thresholdFilter.SetOutsideValue(0)
+        thresholdFilter.SetInsideValue(1)
+        thresholdFilter.Update()
+    
+    
+        #eseguo il cast per restituire l'immagine dello stesso tipo dell'input
+        cast_filter = itk.CastImageFilter[OutputType, type(label_image)].New()
+        cast_filter.SetInput( thresholdFilter.GetOutput() )
+        cast_filter.Update()
+        
+        selected_label = cast_filter.GetOutput()
+        
+    else:
+        
+        #applico la thresholding
+        thresholdFilter = itk.BinaryThresholdImageFilter[OutputType, OutputType].New()
+        thresholdFilter.SetInput( label_image )
+        thresholdFilter.SetLowerThreshold( value - 0.5 )
+        thresholdFilter.SetUpperThreshold( value + 0.5 )
+        thresholdFilter.SetOutsideValue(0)
+        thresholdFilter.SetInsideValue(1)
+        thresholdFilter.Update()
+        
+        selected_label = thresholdFilter.GetOutput()
+        
+        
+    return selected_label
