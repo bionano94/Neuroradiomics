@@ -106,9 +106,9 @@ def cubic_image_strategy(draw):
     This function generates an itk image with a random 3D cube.
     '''
     
-    x_max = draw(st.integers(100,200))
-    y_max = draw(st.integers(100,200))
-    z_max = draw(st.integers(100,200))
+    x_max = draw(st.integers(150,200))
+    y_max = draw(st.integers(150,200))
+    z_max = draw(st.integers(150,200))
     image = np.zeros([x_max, y_max, z_max], np.float32)
     
     side = draw (st.integers(40,60))
@@ -134,9 +134,9 @@ def poligon_image_strategy(draw):
     This function generates an itk image with a random 3D poligon.
     '''
     
-    x_max = draw(st.integers(100,200))
-    y_max = draw(st.integers(100,200))
-    z_max = draw(st.integers(100,200))
+    x_max = draw(st.integers(150,200))
+    y_max = draw(st.integers(150,200))
+    z_max = draw(st.integers(150,200))
     image = np.zeros([x_max, y_max, z_max], np.float32)
     
     x1 = draw (st.integers(10,40))
