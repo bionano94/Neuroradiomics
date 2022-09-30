@@ -1,6 +1,6 @@
 import itk
 import numpy as np
-
+from sklearn.mixture import GaussianMixture
 
 from Neuroradiomics.normalization import *
 from Neuroradiomics.resampler import *
@@ -411,7 +411,7 @@ def find_4_means (brain, wm_mask, gm_mask, csf_mask, prob_threshold = 0.51):
 #########################
 
 
-def brain_segmentation ( brain, wm_mask, gm_mask, csf_mask, undefined = False ):
+def brain_segmentation ( brain, brain_mask, wm_mask, gm_mask, csf_mask, undefined = False ):
     '''
     This function segment a brain image.
     
@@ -419,6 +419,9 @@ def brain_segmentation ( brain, wm_mask, gm_mask, csf_mask, undefined = False ):
     ----------
         brain: itk image object
             The brain image. The brain must be already extracted.
+            
+        brain_mask: itk image object
+            Binary mask used for the skull stripping. A binary image of the brain.
             
         wm_mask: itk image object.
             The wm probability mask. It must be already in the brain space and it must be masked with the same brain
@@ -443,7 +446,7 @@ def brain_segmentation ( brain, wm_mask, gm_mask, csf_mask, undefined = False ):
             1 is wm
             2 is gm
             3 is csf
-            Is unceratain is setted to True 4 are the uncrain pixels.
+            Is unceratain is setted to True 4 are the uncertain pixels.
     
     '''
     
@@ -451,6 +454,20 @@ def brain_segmentation ( brain, wm_mask, gm_mask, csf_mask, undefined = False ):
     #(the index array is useful to build the itk label image
     brain_array, index_array = indexing (brain, brain_mask)
     
+    #Matching the physical spaces of the masks and the brain
+    
+    matching_filter = match_physical_spaces(wm_mask, brain)
+    matching_filter.Update()
+    wm_mask = matching_filter.GetOutput()
+    
+    
+    matching_filter = match_physical_spaces(gm_mask, brain)
+    matching_filter.Update()
+    gm_mask = matching_filter.GetOutput()
+    
+    matching_filter = match_physical_spaces(csf_mask, brain)
+    matching_filter.Update()
+    csf_mask = matching_filter.GetOutput()
     
     #defining the model to be used to the segmentation
     if  undefined :
@@ -480,8 +497,8 @@ def brain_segmentation ( brain, wm_mask, gm_mask, csf_mask, undefined = False ):
     model.fit( np.reshape( brain_array, (-1,1) ) )
     label_array = model.predict( np.reshape( brain_array, (-1,1) ) )
     
-    #transformin the label array into an image. The 1st label value is 1 so wm is 1 and only bg is 0.
-    label_image = label_de_indexing (label_array, index_array, brain, 1)
+    #transforming the label array into an image. The 1st label value is 1 so wm is 1 and only bg is 0.
+    label_image = de_indexing (label_array, index_array, brain, 1)
     
     print ('Your Brain is segmented')
     

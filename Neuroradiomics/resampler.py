@@ -5,8 +5,8 @@ import itk
 
 def match_physical_spaces(image, reference):
 
-    NNInterpolatorType = itk.NearestNeighborInterpolateImageFunction[type(image),
-                                                                     itk.D]
+    NNInterpolatorType = itk.NearestNeighborInterpolateImageFunction[type(image),itk.D]
+    
     interpolator = NNInterpolatorType.New()
 
     TransformType = itk.IdentityTransform[itk.D, 3]

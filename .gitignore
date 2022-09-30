@@ -8,3 +8,6 @@ __pycache__/
 .hypothesis/
 .pytest_cache/
 .coverage
+
+#Jupyter Utility
+Console.ipynb
