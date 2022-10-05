@@ -290,18 +290,14 @@ def gaussian_pixel_distribution_params_evaluation (image, label):
             results[0] = mean value. results[1] = standard eviation
     '''
    
-    OutputType = itk.Image[itk.US, 3]
-    cast_filter = itk.CastImageFilter[type(image), OutputType].New()
-    cast_filter.SetInput(image)
-    cast_filter.Update()
-    cast_image = cast_filter.GetOutput()
+    OutputType = itk.Image[itk.SS, 3]
 
     cast_filter = itk.CastImageFilter[type(label), OutputType].New()
     cast_filter.SetInput(label)
     cast_filter.Update()
     cast_label = cast_filter.GetOutput()
     
-    label_filter = itk_label_shape_statistics(cast_image, cast_label)
+    label_filter = itk_label_shape_statistics(image, cast_label)
     label_filter.Update()
     
     results = [label_filter.GetMean(1), label_filter.GetSigma(1)]
@@ -309,7 +305,7 @@ def gaussian_pixel_distribution_params_evaluation (image, label):
     return results
 
 
-def find_means (brain, wm_mask, gm_mask, csf_mask, prob_threshold = 0.51):
+def find_means (brain, wm_mask, gm_mask, csf_mask, prob_threshold = 0.7):
     '''
     This function finds a rough mean for the masked pixels.
     
@@ -355,7 +351,7 @@ def find_means (brain, wm_mask, gm_mask, csf_mask, prob_threshold = 0.51):
     return means
 
 
-def find_4_means (brain, wm_mask, gm_mask, csf_mask, prob_threshold = 0.51):
+def find_4_means (brain, wm_mask, gm_mask, csf_mask, prob_threshold = 0.7):
     '''
     This function finds a rough mean for the masked pixels. This is useful for the 4 class segmentation, with the uncerain pixels. (not sure if wm or gm)
     
@@ -411,7 +407,7 @@ def find_4_means (brain, wm_mask, gm_mask, csf_mask, prob_threshold = 0.51):
 #########################
 
 
-def brain_segmentation ( brain, brain_mask, wm_mask, gm_mask, csf_mask, undefined = False ):
+def brain_segmentation ( brain, brain_mask, wm_mask, gm_mask, csf_mask, auto_mean = False, undefined = False ):
     '''
     This function segment a brain image.
     
@@ -435,6 +431,10 @@ def brain_segmentation ( brain, brain_mask, wm_mask, gm_mask, csf_mask, undefine
             The csf probability mask. It must be already in the brain space and it must be masked with the same brain
             mask of the brain.
         
+        auto_mean: boolean. Default = False.
+            It True the segmentation will try to find the mean values for each class. If false are used default ones.
+            
+            
         undefined: boolean. Default = False.
             It True the segmentation will find also a fourth classe with the not certain pixels.
             
@@ -446,33 +446,62 @@ def brain_segmentation ( brain, brain_mask, wm_mask, gm_mask, csf_mask, undefine
             1 is wm
             2 is gm
             3 is csf
-            Is unceratain is setted to True 4 are the uncertain pixels.
+            Is uncertain is setted to True 4 are the uncertain pixels.
     
     '''
     
+    #Brain normalization
+    
+    #casting of the mask for the normalization.
+    OutputType = itk.Image[itk.UC, 3]
+    cast_filter = itk.CastImageFilter[type(brain_mask), OutputType].New()
+    cast_filter.SetInput(brain_mask)
+    cast_filter.Update()
+    brain_mask = cast_filter.GetOutput()
+    
+    norm_brain_filter = itk_gaussian_normalization (brain, brain_mask)
+    
+    #I change the physical space because the normalization have changed it.
+    matching_filter = match_physical_spaces(norm_brain_filter.GetOutput(), brain)
+    matching_filter.Update()
+    brain = matching_filter.GetOutput()
+    
+    #mask back to float
+    cast_filter = itk.CastImageFilter[type(brain_mask), OutputType].New()
+    cast_filter.SetInput(brain_mask)
+    cast_filter.Update()
+    brain_mask = cast_filter.GetOutput()
+    
+    
     #linearize and indexing the brain obtaining the image array and the index array
-    #(the index array is useful to build the itk label image
+    #(the index array is useful to build the itk label image)
     brain_array, index_array = indexing (brain, brain_mask)
     
-    #Matching the physical spaces of the masks and the brain
     
-    matching_filter = match_physical_spaces(wm_mask, brain)
-    matching_filter.Update()
-    wm_mask = matching_filter.GetOutput()
-    
-    
-    matching_filter = match_physical_spaces(gm_mask, brain)
-    matching_filter.Update()
-    gm_mask = matching_filter.GetOutput()
-    
-    matching_filter = match_physical_spaces(csf_mask, brain)
-    matching_filter.Update()
-    csf_mask = matching_filter.GetOutput()
     
     #defining the model to be used to the segmentation
-    if  undefined :
-        n_classes = 4
-        model = GaussianMixture(
+    
+    if  auto_mean :
+        
+        print ('The mean values and the weights will be found automatically')
+        #Matching the physical spaces of the masks and the brain
+    
+        matching_filter = match_physical_spaces(wm_mask, brain)
+        matching_filter.Update()
+        wm_mask = matching_filter.GetOutput()
+    
+    
+        matching_filter = match_physical_spaces(gm_mask, brain)
+        matching_filter.Update()
+        gm_mask = matching_filter.GetOutput()
+    
+        matching_filter = match_physical_spaces(csf_mask, brain)
+        matching_filter.Update()
+        csf_mask = matching_filter.GetOutput()
+        
+        if  undefined :
+            n_classes = 4
+            model = GaussianMixture(
                         n_components = n_classes,
                         covariance_type = 'full',
                         tol = 0.01,
@@ -481,14 +510,34 @@ def brain_segmentation ( brain, brain_mask, wm_mask, gm_mask, csf_mask, undefine
                         weights_init = find_4_weights (wm_mask, gm_mask, csf_mask) 
                         )
             
-    else:
+        else :
+            n_classes = 3
+            model = GaussianMixture(
+                        n_components = n_classes,
+                        covariance_type = 'full',
+                        tol = 0.01,
+                        max_iter = 1000,
+                        means_init = np.reshape( find_means ( brain, wm_mask, gm_mask, csf_mask), (-1,1) ),
+                        weights_init = find_prob_weights (wm_mask, gm_mask, csf_mask) 
+                        )
+    else :
+        
+        print ('The mean values will be defaults ones and the weights will be found automatically.')
+        
+        #Default mean values
+        wm_mean  = 0.55
+        gm_mean  = 0
+        csf_mean = -1.5
+        
+        print ('The mean values used are: wm: ',wm_mean ,'; gm: ',gm_mean ,'; csf: ', csf_mean)
+        
         n_classes = 3
         model = GaussianMixture(
                         n_components = n_classes,
                         covariance_type = 'full',
                         tol = 0.01,
                         max_iter = 1000,
-                        means_init = np.reshape( find_means ( brain, wm_mask, gm_mask, csf_mask), (-1,1) ),
+                        means_init = np.reshape( (wm_mean, gm_mean, csf_mean), (-1,1) ),
                         weights_init = find_prob_weights (wm_mask, gm_mask, csf_mask) 
                         )
             
@@ -499,6 +548,8 @@ def brain_segmentation ( brain, brain_mask, wm_mask, gm_mask, csf_mask, undefine
     
     #transforming the label array into an image. The 1st label value is 1 so wm is 1 and only bg is 0.
     label_image = de_indexing (label_array, index_array, brain, 1)
+    
+    label_image
     
     print ('Your Brain is segmented')
     
