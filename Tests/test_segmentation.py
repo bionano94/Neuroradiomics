@@ -8,6 +8,7 @@ from Neuroradiomics.registration import *
 from Neuroradiomics.skull_stripping import *
 from Neuroradiomics.normalization import *
 from Neuroradiomics.segmentation import *
+from Neuroradiomics.evaluation_utilities import *
 
 
 import itk
@@ -230,3 +231,17 @@ def test_label_selection (labels, value):
     
     assert np.all( np.logical_or( selected_label_array == 0, selected_label_array == 1) )
     assert np.all(check_boolean_vector)
+
+    
+    
+#Testing the evaluation function
+@given (mask = binary_uniform_cube_image_strategy()) 
+@settings(max_examples=20, deadline = None, suppress_health_check = (HC.too_slow,))
+def test_evaluate_mask (mask):
+    
+    results = evaluate_mask (mask, mask)
+    
+    assert results[0] == 1
+    assert results[1] == 0
+    assert results[2] == 0
+    assert results[3] == 0

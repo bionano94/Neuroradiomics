@@ -16,7 +16,7 @@ from Neuroradiomics.registration import elastix_rigid_registration
 from Neuroradiomics.registration import Set_sampler_parameters_as_image
 from Neuroradiomics.registration import transform_parameters_writer
 from Neuroradiomics.registration import registration_transform_parameters_writer
-from Neuroradiomics.registration import evaluate_registration_mse
+from Neuroradiomics.evaluation_utilities import evaluate_registration_mse
 
 
 
