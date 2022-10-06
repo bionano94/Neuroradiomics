@@ -383,9 +383,12 @@ def find_4_means (brain, wm_mask, gm_mask, csf_mask, prob_threshold = 0.7):
             means[3] = uncertain_mean
     '''
     
+    #binarizing for the probability higher than the fixed threshold
     min_wm = binarize(wm_mask, prob_threshold)
     min_gm = binarize(gm_mask, prob_threshold)
     min_csf = binarize(csf_mask, prob_threshold)
+    
+    #probability between 0.1 and the fixed threshold
     idk = binarize(wm_mask, 0.1, prob_threshold)
     
     wm_mean = gaussian_pixel_distribution_params_evaluation(brain, min_wm)[0]
@@ -507,7 +510,7 @@ def brain_segmentation ( brain, brain_mask, wm_mask, gm_mask, csf_mask, auto_mea
                         tol = 0.01,
                         max_iter = 10000,
                         means_init = np.reshape( find_4_means ( brain, wm_mask, gm_mask, csf_mask), (-1,1) ),
-                        weights_init = find_4_weights (wm_mask, gm_mask, csf_mask) 
+                        weights_init = find_prob_4_weights (wm_mask, gm_mask, csf_mask) 
                         )
             
         else :
@@ -542,7 +545,7 @@ def brain_segmentation ( brain, brain_mask, wm_mask, gm_mask, csf_mask, auto_mea
                         )
             
     
-    #updatin the funtion to find the labels
+    #updating the funtion to find the labels
     model.fit( np.reshape( brain_array, (-1,1) ) )
     label_array = model.predict( np.reshape( brain_array, (-1,1) ) )
     
