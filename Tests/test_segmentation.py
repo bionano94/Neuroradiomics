@@ -46,6 +46,7 @@ def masking_random_image_strategy(draw):
 
     return rndImage.GetOutput()
 
+
 @st.composite
 def masking_cube_mask_strategy(draw):
     '''
@@ -75,10 +76,11 @@ def masking_cube_mask_strategy(draw):
     return image
 
 
+
 @st.composite
 def binary_uniform_cube_image_strategy(draw):
     '''
-    This function generates an itk image with a 3D cube of random side. It has to be used as a mask.
+    This function generates an itk image with a 3D cube. It has to be used as a mask.
     '''
     
     x_max = 200
@@ -137,6 +139,54 @@ def label_image_strategy(draw):
     return image
     
 
+@st.composite
+def cubic_image_strategy(draw):
+    '''
+    This function generates an itk image with a random 3D cube.
+    '''
+    
+    x_max = draw(st.integers(150,200))
+    y_max = draw(st.integers(150,200))
+    z_max = draw(st.integers(150,200))
+    image = np.zeros([x_max, y_max, z_max], np.float32)
+    
+    side = draw (st.integers(40,60))
+    x1 = draw (st.integers(10,40))
+    y1 = draw (st.integers(10,40))
+    z1 = draw (st.integers(10,40))
+    x2 = x1 + side
+    y2 = y1 + side
+    z2 = z1 + side
+    
+    for x in range (x1, x2):
+        for y in range (y1, y2):
+            for z in range (z1, z2):
+                image[x,y]=100
+                
+    image = itk.image_view_from_array(image)
+    return image
+
+
+
+@st.composite
+def probability_mask_strategy(draw):
+    '''
+    This function generates an itk image with a 3D cube with random values in each pixel etween 0 and 1. It has to be used as a probability map.
+    '''
+    
+    x_max = 5
+    y_max = 5
+    z_max = 5
+    image = np.zeros([x_max, y_max, z_max], np.float32)
+    
+    for x in range (x_max):
+        for y in range (y_max):
+            for z in range (z_max):
+                image[x,y,z] = (draw (st.integers(1, 1000 )))/1000
+                
+    image = itk.image_view_from_array(image)
+    
+    return image
 
 
 # ████████ ███████ ███████ ████████ ███████ 
@@ -187,7 +237,25 @@ def test_de_indexing (image, mask):
     #Same Spacing
     assert np.all(de_indexed_image.GetSpacing() == image.GetSpacing())
     
+    
+    
+    
+#Testing if indexing and de-indexing give the same image
 
+@given (image = cubic_image_strategy(), mask = binary_uniform_cube_image_strategy())
+@settings(max_examples=20, deadline = None)
+def test_index_de_index_validation (image, mask):
+    
+    image_array, index_array = indexing(image, mask) 
+    
+    de_indexed_image = de_indexing (image_array, index_array, image)
+    
+    
+    #same image
+    assert np.all( np.isclose( itk.GetArrayFromImage(de_indexed_image), itk.GetArrayFromImage(image), 1e-03, 1e-03))
+    
+    
+    
     
 ###################
 # Means Functions #
@@ -211,6 +279,51 @@ def test_gaussian_prameters (image1, image2, mask):
     assert params2[1] >= 0
     
     
+    
+#####################
+# Weights Functions #
+#####################
+
+
+#3 classes weights function    
+@given (mask1 = probability_mask_strategy(), mask2 = probability_mask_strategy(), mask3 = probability_mask_strategy() )
+@settings(max_examples = 500, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
+def test_weights_function (mask1, mask2, mask3):
+    
+    weights = find_prob_weights(mask1, mask2, mask3)
+    
+    
+    #nessun peso deve essere maggiore di 1 o minore di 0
+    assert weights[0] <= 1
+    assert weights[0] >= 0
+    assert weights[1] <= 1
+    assert weights[1] >= 0
+    assert weights[2] <= 1
+    assert weights[2] >= 0
+
+    #la somma dei pesi deve essere uguale ad 1. Uso isclose per evitare problemi di approssimazione
+    assert np.isclose( (weights[0] + weights[1] + weights[2] ), 1)
+    
+#4 classes weights function    
+@given (mask1 = probability_mask_strategy(), mask2 = probability_mask_strategy(), mask3 = probability_mask_strategy() )
+@settings(max_examples = 500, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
+def test_4_weights_function (mask1, mask2, mask3):
+    
+    weights = find_prob_4_weights(mask1, mask2, mask3)
+    
+    
+    #nessun peso deve essere maggiore di 1 o minore di 0
+    assert weights[0] <= 1
+    assert weights[0] >= 0
+    assert weights[1] <= 1
+    assert weights[1] >= 0
+    assert weights[2] <= 1
+    assert weights[2] >= 0
+    assert weights[3] <= 1
+    assert weights[3] >= 0
+
+    #la somma dei pesi deve essere uguale ad 1. Uso isclose per evitare problemi di approssimazione
+    assert np.isclose( (weights[0] + weights[1] + weights[2] + weights[3]), 1)
     
 #####################à#
 # Utilities Functions #

@@ -176,7 +176,11 @@ def find_prob_weights (wm_mask, gm_mask, csf_mask):
     csf_pixels = np.count_nonzero(prob_array == 2)
     
     #finding the total number of pixels
-    tot_pixel = np.count_nonzero( tot_array ) 
+    tot_pixel = np.count_nonzero( tot_array )
+    
+    if tot_pixel == 0 :
+        print( 'All your masks are empty!!!')
+        return [0,0,0]
     
     #because both background and wm will be labelled as 0, the wm number of pixels is find using subtraction.
     wm_pixels = tot_pixel - gm_pixels - csf_pixels
