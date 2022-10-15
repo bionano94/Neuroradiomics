@@ -166,7 +166,7 @@ def find_prob_weights (wm_mask, gm_mask, csf_mask):
     tot_array = wm_array + gm_array + csf_array
     
     #creating a 4dim array in order to use argmax
-    four_dim_array = [wm_mask, gm_mask, csf_mask]
+    four_dim_array = [wm_array, gm_array, csf_array]
     
     #finding for every pixel which is its most probable type
     prob_array = np.argmax(four_dim_array, 0)
@@ -242,7 +242,7 @@ def find_prob_4_weights (wm_mask, gm_mask, csf_mask):
     
     
     #creating a 4dim array in order to use argmax
-    four_dim_array = [wm_mask, gm_mask, csf_mask, idk_array]
+    four_dim_array = [wm_array, gm_array, csf_array, idk_array]
     
     #creating a 4dim array in order to use argmax
     prob_array = np.argmax(four_dim_array, 0)

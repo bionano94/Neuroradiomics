@@ -205,7 +205,7 @@ def probability_mask_strategy(draw):
 #Testing the indexing function
 
 @given (image = masking_random_image_strategy(), mask = masking_cube_mask_strategy())
-@settings(max_examples=20, deadline = None)
+@settings(max_examples=20, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
 def test_indexing (image, mask):
     
     image_array, index_array = indexing(image, mask)
@@ -223,7 +223,7 @@ def test_indexing (image, mask):
 #Testing the de-indexing function
 
 @given (image = masking_random_image_strategy(), mask = masking_cube_mask_strategy())
-@settings(max_examples=20, deadline = None)
+@settings(max_examples=20, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
 def test_de_indexing (image, mask):
     
     image_array, index_array = indexing(image, mask)
@@ -243,7 +243,7 @@ def test_de_indexing (image, mask):
 #Testing if indexing and de-indexing give the same image
 
 @given (image = cubic_image_strategy(), mask = binary_uniform_cube_image_strategy())
-@settings(max_examples=20, deadline = None)
+@settings(max_examples=20, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
 def test_index_de_index_validation (image, mask):
     
     image_array, index_array = indexing(image, mask) 
@@ -265,7 +265,7 @@ def test_index_de_index_validation (image, mask):
 #Testing the Gaussian function
 
 @given (image1 = binary_uniform_cube_image_strategy(), image2 = masking_cube_mask_strategy(), mask = masking_cube_mask_strategy())
-@settings(max_examples=20, deadline = None, suppress_health_check = (HC.too_slow,))
+@settings(max_examples=20, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
 def test_gaussian_prameters (image1, image2, mask):
     
     params1 = gaussian_pixel_distribution_params_evaluation(image1, mask)
