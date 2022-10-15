@@ -4,13 +4,13 @@ A pipeline for the skull stripping and the segmentation of the MRI of a human he
 
 | **Authors**  | **Project** |  **Build Status** | **License** |
 |:------------:|:-----------:|:-----------------:|:-----------:|
-|[**N. Biondini**](https://github.com/bionano94) <br/> [**R.Biondi**](https://github.com/RiccardoBiondi)| **FemurSegmentation** | [![Ubuntu CI](https://github.com/bionano94/Neuroradiomics/workflows/Neuroradiomics%CI.yml/badge.svg)] | ![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg) |
+|[**N. Biondini**](https://github.com/bionano94) <br/> [**R.Biondi**](https://github.com/RiccardoBiondi)| **Neuroradiomics** | [![Ubuntu CI](https://github.com/bionano94/Neuroradiomics/workflows/Neuroradiomics%CI.yml/badge.svg)] | ![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg) |
 
 
 ## Table of Contents
-  1.[Prerequisites](#Prerequisites)
-  2.[Installation](#Installation]
-  3.[References](#References)
+  1. [Prerequisites](#Prerequisites)
+  2. [Installation](#Installation)
+  3. [References](#References)
 
 ## Prerequisites
 
