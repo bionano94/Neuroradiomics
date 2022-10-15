@@ -4,15 +4,22 @@ A pipeline for the skull stripping and the segmentation of the MRI of a human he
 
 | **Authors**  | **Project** |  **Build Status** | **License** |
 |:------------:|:-----------:|:-----------------:|:-----------:|
-|[**N. Biondini**](https://github.com/bionano94) <br/> [**R.Biondi**](https://github.com/RiccardoBiondi)| **FemurSegmentation** | [![Ubuntu CI](https://github.com/bionano94/Neuroradiomics/workflows/Neuroradiomics%CI.yml/badge.svg)] | [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)] |
+|[**N. Biondini**](https://github.com/bionano94) <br/> [**R.Biondi**](https://github.com/RiccardoBiondi)| **FemurSegmentation** | [![Ubuntu CI](https://github.com/bionano94/Neuroradiomics/workflows/Neuroradiomics%CI.yml/badge.svg)] | ![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg) |
 
+
+## Table of Contents
+  1.[Prerequisites](#Prerequisites)
+  2.[Installation](#Installation]
+  3.[References](#References)
 
 ## Prerequisites
 
 Supported python versions: ![Python version](https://img.shields.io/badge/python-3.6.*|3.7.*|3.8.*|3.9.*-blue.svg)
 
 Supported [ITK](https://itk.org/) versions: 5.1.0 or above
+
 Supported [ITK-elastix version](https://github.com/InsightSoftwareConsortium/ITKElastix): 0.13 or above
+
 Supported [Scikit Learn](https://scikit-learn.org/stable/) versions: 1.1.2 or above
 
 
