@@ -6,6 +6,12 @@ from Neuroradiomics.registration import elastix_multimap_registration
 from Neuroradiomics.resampler import *
 
 
+
+
+#####################
+# Masking Functions #
+#####################
+
 def negative_3d_masking (image, mask):
     '''
     This function apply the negative of the image loaded as "mask" to a 3D image.
@@ -99,6 +105,9 @@ def masking (image, mask):
 
 
 
+##########################
+# Thresholding Functions #
+##########################
 
 def binarize ( image, low_value = 0.1, hi_value = None ):
     '''
@@ -201,6 +210,13 @@ def normal_threshold ( image, value ):
     return final_image
 
 
+
+
+
+#########################
+# Specialized Functions #
+#########################
+
 def find_largest_connected_region (image):
     '''
     This function find the largest connected region in a binary image.
@@ -247,7 +263,46 @@ def find_largest_connected_region (image):
     
     return cast_filter.GetOutput()
 
-def binary_eroding (image, radius=1):
+
+
+
+#######################
+# Filtering Functions #
+#######################
+
+def binary_dilating (image, radius = 1):
+    
+    '''
+    This function applies a dilating filter with a ball structuring element to a binary image.
+    
+    Parameters
+    ----------
+        image: itk image object
+            The binary image you want to dilate.
+        
+        radius: int number
+            The radius of the structurin element. Default = 1.
+    
+    Returns
+    -------
+        eroded_image: itk image object
+            The image eroded.
+    '''
+    
+    #creo l'oggetto
+    struct_element = itk.FlatStructuringElement[3].Ball(radius)  
+    
+    dilateFilter = itk.BinaryErodeImageFilter[type(image), type(image), type(struct_element)].New()
+    dilateFilter.SetInput(image)
+    dilateFilter.SetKernel(struct_element)
+    dilateFilter.Update()
+    
+    return dilateFilter.GetOutput()
+
+        
+        
+
+def binary_eroding (image, radius = 1):
     '''
     This function applies an eroding filter with a ball structuring element to a binary image.
     
@@ -276,6 +331,8 @@ def binary_eroding (image, radius=1):
     erodingFilter.Update()
     
     return erodingFilter.GetOutput()
+
+
     
 def binary_opening (image, radius=1):
     '''
@@ -308,6 +365,8 @@ def binary_opening (image, radius=1):
     openingFilter.Update()
     
     return openingFilter.GetOutput()
+
+
 
 def hole_filler(image):
     '''
@@ -345,6 +404,11 @@ def hole_filler(image):
 
 
 
+
+#######################
+# Stripping Functions #
+#######################
+
 def skull_stripping_mask (image, atlas, mask, transformation_return = False):
     '''
     This function creates a mask to extract the brain from an head image.
@@ -377,6 +441,11 @@ def skull_stripping_mask (image, atlas, mask, transformation_return = False):
     #apply the transformation to the mask and then make it again a binary image
     reg_mask = itk.transformix_filter( mask, reg_atlas_obj.GetTransformParameterObject() )
     bin_reg_mask = binarize( reg_mask )
+    
+    
+    #dilating the mask to be more conservative
+    bin_reg_mask = binary_dilating(bin_reg_mask)
+    
     
     #do a first skull stripping
     first_brain = negative_3d_masking( image, bin_reg_mask )
