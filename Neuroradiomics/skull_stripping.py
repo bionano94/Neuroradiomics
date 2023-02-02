@@ -180,7 +180,7 @@ def binarize ( image, low_value = 0.1, hi_value = None ):
 
 def normal_threshold ( image, value ):
     '''
-    This function apply a threshold to a normaized image thresholding everything in between plus and minus the value.
+    This function apply a threshold to a normalized image thresholding everything in between plus and minus the value.
     
     Parameters
     ----------

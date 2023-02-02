@@ -163,7 +163,6 @@ def elastix_multimap_registration(fixed_image, moving_image, clog_value = False)
     elastix_object.SetParameterObject(parameter_object)
     elastix_object.SetLogToConsole(clog_value)
     
-    
     elastix_object.UpdateLargestPossibleRegion()
     
     print("The Multimap Registration is done!")
@@ -416,7 +415,7 @@ def Set_sampler_parameters_as_image(params_file, image):
 #CHANGE AN ATTRIBUTE VALUE OF A TRASFORM
 def Set_parameters_map_attribute(params_file, attribute, value):
     """
-    This function sets the Size and the Spacing saved in a parameters file as the ones of an other image.
+    This function sets an attribute of a parameters file as you want.
     
     Parameters
     ----------
