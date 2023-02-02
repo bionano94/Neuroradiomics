@@ -270,37 +270,6 @@ def find_largest_connected_region (image):
 # Filtering Functions #
 #######################
 
-def binary_dilating (image, radius = 1):
-    
-    '''
-    This function applies a dilating filter with a ball structuring element to a binary image.
-    
-    Parameters
-    ----------
-        image: itk image object
-            The binary image you want to dilate.
-        
-        radius: int number
-            The radius of the structurin element. Default = 1.
-    
-    Returns
-    -------
-        eroded_image: itk image object
-            The image eroded.
-    '''
-    
-    #creo l'oggetto
-    struct_element = itk.FlatStructuringElement[3].Ball(radius)  
-    
-    dilateFilter = itk.BinaryErodeImageFilter[type(image), type(image), type(struct_element)].New()
-    dilateFilter.SetInput(image)
-    dilateFilter.SetKernel(struct_element)
-    dilateFilter.Update()
-    
-    return dilateFilter.GetOutput()
-
-        
-        
 
 def binary_eroding (image, radius = 1):
     '''
@@ -334,9 +303,9 @@ def binary_eroding (image, radius = 1):
 
 
     
-def binary_opening (image, radius=1):
+def binary_dilating (image, radius=1):
     '''
-    This function applies an opening filter with a ball structuring element to a binary image.
+    This function applies a dilating filter with a ball structuring element to a binary image.
     
     Parameters
     ----------
@@ -344,12 +313,12 @@ def binary_opening (image, radius=1):
             The binary image you want to dilate.
         
         radius: int number
-            The radius of the structurin element. Default = 1.
+            The radius of the structuring element. Default = 1.
     
     Returns
     -------
         dilated_image: itk image object
-            The image dilated.
+            The dilated image.
     '''
          
     
@@ -358,13 +327,13 @@ def binary_opening (image, radius=1):
     struct_element = itk.FlatStructuringElement[3].Ball(radius)
 
 
-    openingFilter = itk.BinaryDilateImageFilter[type(image), type(image), type(struct_element)].New()
-    openingFilter.SetInput(image)
-    openingFilter.SetKernel(struct_element)
-    openingFilter.SetDilateValue(1) 
-    openingFilter.Update()
+    dilatingFilter = itk.BinaryDilateImageFilter[type(image), type(image), type(struct_element)].New()
+    dilatingFilter.SetInput(image)
+    dilatingFilter.SetKernel(struct_element)
+    dilatingFilter.SetDilateValue(1) 
+    dilatingFilter.Update()
     
-    return openingFilter.GetOutput()
+    return dilatingFilter.GetOutput()
 
 
 
@@ -481,7 +450,7 @@ def skull_stripping_mask (image, atlas, mask, transformation_return = False):
     first_mask = find_largest_connected_region( eroded_mask )
     
     #apply a dilation to the mask and a hole filler
-    final_mask = hole_filler( binary_opening(first_mask, 2) )
+    final_mask = hole_filler( binary_dilating(first_mask, 2) )
     
     print('Your brain mask is ready!')
     
