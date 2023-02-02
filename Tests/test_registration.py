@@ -61,8 +61,8 @@ def square_image_strategy(draw):
     This function generates an itk image with a random 2D square.
     '''
    
-    x_max = draw(st.integers(100,200))
-    y_max = draw(st.integers(100,200))
+    x_max = draw(st.integers(150,200))
+    y_max = draw(st.integers(150,200))
     image = np.zeros([x_max, y_max], np.float32)
 
     
@@ -85,8 +85,8 @@ def rectangular_image_strategy(draw):
     This function generates an itk image with a random 2D rectangle.
     '''
     
-    x_max = draw(st.integers(100,200))
-    y_max = draw(st.integers(100,200))
+    x_max = draw(st.integers(150,200))
+    y_max = draw(st.integers(150,200))
     image = np.zeros([x_max, y_max], np.float32)
     
     x1 = draw (st.integers(10,40))

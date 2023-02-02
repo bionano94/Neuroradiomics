@@ -294,14 +294,14 @@ def test_normal_threshold(image, value):
 #Binay Opening
 @given (image = random_image_strategy())
 @settings(max_examples=20, deadline = None)
-def test_binary_opening(image):
+def test_binary_dilating(image):
     '''
     This function tests the opening function.
     '''
     
     bin_image = binarize(image)
     
-    dilated_image = binary_opening(bin_image)
+    dilated_image = binary_dilating(bin_image)
     
     assert np.all( (itk.GetArrayFromImage(dilated_image) == 0) | (itk.GetArrayFromImage(dilated_image) == 1) )
     assert np.all( image.GetSpacing() == dilated_image.GetSpacing() )
