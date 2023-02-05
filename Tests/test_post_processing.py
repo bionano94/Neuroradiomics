@@ -221,7 +221,7 @@ def test_all_positive_score (label, pos_mask, neg_mask):
     
     
     assert np.size(score) == maximum_filter.GetMaximum()
-    assert np.all(score) == 1
+    assert score == [1] * len(score)
     
 #Testing Score Function
 @given(label = label_image_strategy(), pos_mask = black_image_strategy(), neg_mask = white_image_strategy() )
@@ -238,7 +238,7 @@ def test_all_negative_score (label, pos_mask, neg_mask):
     
     
     assert np.size(score) == maximum_filter.GetMaximum()
-    assert np.all(score) == -1
+    assert score == [-1] * len(score)
     
 #Testing Score Function
 @given(label = label_image_strategy(), pos_mask = white_image_strategy(), neg_mask = white_image_strategy() )
@@ -255,5 +255,23 @@ def test_all_overlapping_score (label, pos_mask, neg_mask):
     
     
     assert np.size(score) == maximum_filter.GetMaximum()
-    assert np.all(score) == 0
+    assert score == [0] * len(score)
     
+
+#Testing Features Score Function
+@given(label = label_image_strategy(), pos_mask = white_image_strategy(), neg_mask = white_image_strategy() )
+@settings(deadline = None)
+def test_feature_scoring (label, pos_mask, neg_mask):
+    
+    masks_list = [pos_mask, neg_mask]
+    
+    score = feature_scoring(label, masks_list)
+    
+    relabelled = find_connected_regions(label)
+    maximum_filter = itk.MinimumMaximumImageCalculator[type(relabelled)].New()
+    maximum_filter.SetImage(relabelled)
+    maximum_filter.ComputeMaximum()
+    
+    
+    assert len(score) == maximum_filter.GetMaximum()
+    assert np.all( score == [[1, 1, 1]] * len(score) )
