@@ -151,14 +151,17 @@ def scoring (label_img, pos_mask, neg_mask, pos_val = 1, neg_val = 1):
 
 def feature_scoring (label_img, masks_list):
     '''
-    This function evaluates the score for each labeled element.
-    It gives a positive score for each pixel overlapping the potivie mask and a negative score for each pixel overlapping the negative mask.
-    The score for each label is then divided by the total pixel number of that label.
+    This function evaluates the score for each feature of each labeled element.
+    It returns 2 dimensional array. For every labeled element it contains n-masks + 1 elements.
+    The first feature is the average of the pixel's value for each label.
     
     Parameters
     ----------
         label_img: ITK Image object.
                    The image containig the labeled elements.
+        
+        masks_list: list of ITK Image.
+                    The masks you wanna use to compute some features.
                  
                  
     Return
