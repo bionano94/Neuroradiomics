@@ -55,6 +55,7 @@ def match_atlases (changing_img, reference_img, displacement = [0, 0, 0], regist
     return changing_img
 
 
+#################################
 def find_connected_regions (image):
     '''
     This function finds the connected region in a binary image.
@@ -89,6 +90,11 @@ def find_connected_regions (image):
     return connected_filter.GetOutput()
 
 
+
+
+#############
+# SCORING 
+#############
 def scoring (label_img, pos_mask, neg_mask, pos_val = 1, neg_val = 1):
     '''
     This function evaluates the score for each labeled element.
@@ -148,10 +154,10 @@ def scoring (label_img, pos_mask, neg_mask, pos_val = 1, neg_val = 1):
     return pounded_score
 
 
-
+##################
 def feature_scoring (label_img, masks_list):
     '''
-    This function evaluates the score for each feature of each labeled element.
+    This function evaluates the score for each feature of each labeled element (with a value greater than 0.5).
     It returns 2 dimensional array. For every labeled element it contains n-masks + 1 elements.
     The first feature is the average of the pixel's value for each label.
     
@@ -166,12 +172,15 @@ def feature_scoring (label_img, masks_list):
                  
     Return
     ------
-        pounded_score: list of float.
-                       The averaged score for each label.
+        pounded_score: Array of float.
+                       The score for each features of each label.
+                       
+        counted_label: ITK Image object.
+                   The image containig the labeled elements differentiated one from another.
     
     '''
     #binarize the label
-    bin_label = binarize (label_img)
+    bin_label = binarize (label_img, 0.5)
     
     #differentiating the labels
     counted_label = find_connected_regions (bin_label)
@@ -203,4 +212,212 @@ def feature_scoring (label_img, masks_list):
                     
     pounded_score = score / count[:,None]
     
-    return pounded_score
+    return pounded_score, counted_label
+
+
+#############################
+# FIND TRUTH VALUE
+#############################
+def find_Jaccard_truth_value (counted_label, gnd_label, threshold = 0.25):
+    
+    '''
+    This function is meant to be used for finding the classification of the training set.
+    It gives an array of bools of the size of the number of labels.
+    A label will be considered true if the modified Jaccard score is greater than the treshold.
+    
+    Parameters
+    ----------
+        counted_label: ITK Image object.
+                       The image containing the supposed labels. Every not connected object must have a different int value.
+        
+        
+        gnd_label: ITK Image object.
+                    The image containing the labels considered as Ground Truth. It must be binary.
+                    
+        threshold: Float number.
+                   The threshold for the modified Jaccard score to consider a label True.
+    
+    
+    Return
+    ------
+        value_array: Array of bool.
+                     A list with the value of truth for every supposed label. Default is 0.25
+                     
+        jaccard_index: Array of float.
+                       An array with the modified Jaccard score for each label
+    
+    
+    '''
+    
+    #FINDING NUMBER OF LABELS
+    maximum_filter = itk.MinimumMaximumImageCalculator[type(counted_label)].New()
+    maximum_filter.SetImage(counted_label)
+    maximum_filter.ComputeMaximum()
+    num_labels = maximum_filter.GetMaximum()
+    
+    count_labels = np.array([0] * num_labels) #total number of pixels for lesion
+    value_array = np.array( [False] * num_labels ) #array that reports what label is true
+    
+    
+    
+    #finding number of GND Truth label
+    counted_gnd = find_connected_regions(gnd_label)
+    #FINDING NUMBER OF GND LABELS
+    maximum_filter = itk.MinimumMaximumImageCalculator[type(counted_gnd)].New()
+    maximum_filter.SetImage(counted_gnd)
+    maximum_filter.ComputeMaximum()
+    num_gnd = maximum_filter.GetMaximum()
+    
+    count_gnd = np.array( [0] * num_gnd ) #total number of pixels for lesion
+    
+    
+    overlapping_matrix = np.array( [[0]*num_gnd]*num_labels)
+    
+    jaccard_index = np.array([0.]*num_labels)
+    
+    
+    index = itk.Index[3]()
+
+    for index[0] in range( counted_label.GetLargestPossibleRegion().GetSize()[0] ):
+
+            for index[1] in range( counted_label.GetLargestPossibleRegion().GetSize()[1] ):
+
+                for index[2] in range( counted_label.GetLargestPossibleRegion().GetSize()[2] ):
+                    
+                    if counted_gnd.GetPixel(index) != 0 :
+                        count_gnd[ counted_gnd.GetPixel(index) - 1 ] +=1
+                        
+                    if counted_label.GetPixel(index) != 0 :
+                        count_labels[ counted_label.GetPixel(index) - 1 ] +=1
+                        
+                        
+                        if counted_gnd.GetPixel(index) != 0 :
+                            overlapping_matrix[counted_label.GetPixel(index) - 1][counted_gnd.GetPixel(index) - 1] += 1
+                            
+    
+    
+    
+    num = np.array([0]*num_labels)
+    den = np.array([0]*num_labels)
+    
+    
+    for i in range(num_labels):
+        for j in range(num_gnd):
+            num[i] += overlapping_matrix[i][j]
+            if overlapping_matrix[i][j]!= 0 : den[i] += count_gnd[j]
+        den[i] += count_labels[i] - num[i]
+        
+        jaccard_index[i] = num[i]/den[i]
+        
+        value_array[i] = (jaccard_index[i] >= threshold)
+        
+    
+    return value_array, jaccard_index
+
+
+################################
+
+def find_simple_truth_value (counted_label, true_label):
+    
+    '''
+    This function is meant to be used for finding the classification of the training set.
+    It gives an array of bools of the size of the number of labels.
+    A label will be considered true if at least one pixel overlaps the ground truth.
+    
+    Parameters
+    ----------
+        counted_label: ITK Image object.
+                       The image containing the supposed labels. Every not connected object must have a different int value.
+        
+        
+        true_label: ITK Image object.
+                    The image containing the labels considered as Ground Truth. It must be binary.
+    
+    
+    Return
+    ------
+        value_array: List of bool.
+                     A list with the value of truth for every supposed label.
+    
+    
+    '''
+    
+    #FINDING NUMBER OF LABELS
+    maximum_filter = itk.MinimumMaximumImageCalculator[type(counted_label)].New()
+    maximum_filter.SetImage(counted_label)
+    maximum_filter.ComputeMaximum()
+    
+    index = itk.Index[3]()
+    value_array = np.array( [False] * maximum_filter.GetMaximum() ) #total number of pixels for lesion
+    
+
+    for index[0] in range( counted_label.GetLargestPossibleRegion().GetSize()[0] ):
+
+            for index[1] in range( counted_label.GetLargestPossibleRegion().GetSize()[1] ):
+
+                for index[2] in range( counted_label.GetLargestPossibleRegion().GetSize()[2] ):
+
+                    if counted_label.GetPixel(index) != 0 :
+                        value_array[counted_label.GetPixel(index) - 1] = value_array[counted_label.GetPixel(index) - 1] or (true_label.GetPixel(index) == 1)
+    
+    return value_array
+
+
+
+##################
+# Selecting Labels
+##################
+
+def label_killer (counted_label, surviving_array):
+    
+    '''
+    This function "kills" every label that is not considered TRUE.
+    
+    Parameters
+    ----------
+        counted_label: ITK Image object.
+                       The image containing the labels. Every not connected object must have a different int value.
+
+        
+        surviving_array: List of bool.
+                         A list with the value of truth for every label. It must have the size of the total number of labels
+        
+        
+    Return
+    ------
+        final_label: ITK Image object.
+                     The image containing only the labels considered 'TRUE'.
+        
+    '''
+    
+    #FINDING NUMBER OF LABELS
+    maximum_filter = itk.MinimumMaximumImageCalculator[type(counted_label)].New()
+    maximum_filter.SetImage(counted_label)
+    maximum_filter.ComputeMaximum()
+    
+    Dimension = 3
+    ImageType = itk.template(counted_label)[1]
+    final_label = itk.Image[ImageType].New()
+    
+    final_label.SetRegions( counted_label.GetLargestPossibleRegion() )
+    final_label.SetSpacing( counted_label.GetSpacing() )
+    final_label.SetOrigin( counted_label.GetOrigin() )
+    final_label.SetDirection( counted_label.GetDirection() )
+    final_label.Allocate()
+    
+    index = itk.Index[3]()
+
+    for index[0] in range( counted_label.GetLargestPossibleRegion().GetSize()[0] ):
+
+            for index[1] in range( counted_label.GetLargestPossibleRegion().GetSize()[1] ):
+
+                for index[2] in range( counted_label.GetLargestPossibleRegion().GetSize()[2] ):
+
+                    if counted_label.GetPixel(index) != 0 :
+                        
+                        if surviving_array[ counted_label.GetPixel(index) - 1 ]: final_label.SetPixel(index, counted_label.GetPixel(index))
+                        else: final_label.SetPixel(index, 0)
+                        
+                    else: final_label.SetPixel(index, 0)
+                        
+    return final_label

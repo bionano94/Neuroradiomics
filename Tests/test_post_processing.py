@@ -257,6 +257,8 @@ def test_all_overlapping_score (label, pos_mask, neg_mask):
     assert np.size(score) == maximum_filter.GetMaximum()
     assert score == [0] * len(score)
     
+    
+    
 
 #Testing Features Score Function
 @given(label = label_image_strategy(), pos_mask = white_image_strategy(), neg_mask = white_image_strategy() )
@@ -265,9 +267,8 @@ def test_feature_scoring (label, pos_mask, neg_mask):
     
     masks_list = [pos_mask, neg_mask]
     
-    score = feature_scoring(label, masks_list)
+    score, relabelled = feature_scoring(label, masks_list)
     
-    relabelled = find_connected_regions(label)
     maximum_filter = itk.MinimumMaximumImageCalculator[type(relabelled)].New()
     maximum_filter.SetImage(relabelled)
     maximum_filter.ComputeMaximum()
@@ -275,3 +276,148 @@ def test_feature_scoring (label, pos_mask, neg_mask):
     
     assert len(score) == maximum_filter.GetMaximum()
     assert np.all( score == [[1, 1, 1]] * len(score) )
+    
+    
+    
+    
+    #Testing Features Score Function
+@given(label = label_image_strategy(), pos_mask = black_image_strategy(), neg_mask = black_image_strategy() )
+@settings(deadline = None)
+def test_feature_scoring2 (label, pos_mask, neg_mask):
+    
+    masks_list = [pos_mask, neg_mask]
+    
+    score, relabelled = feature_scoring(label, masks_list)
+    
+    relabelled_test = find_connected_regions(label)
+    maximum_filter = itk.MinimumMaximumImageCalculator[type(relabelled)].New()
+    maximum_filter.SetImage(relabelled)
+    maximum_filter.ComputeMaximum()
+    
+    
+    assert np.all(np.isclose( itk.GetArrayFromImage(relabelled_test), itk.GetArrayFromImage(relabelled), 1e-3, 1e-2 ) ) 
+    assert len(score) == maximum_filter.GetMaximum()
+    assert np.all( score == [[1, 0, 0]] * len(score) )
+    
+    
+    
+    
+    
+#Testing the FINDING SIMPLE TRUTH Function
+@given(label = label_image_strategy(), gnd_truth = black_image_strategy() )
+@settings(deadline = None)
+def test_find_simple_truth_all_false (label, gnd_truth):
+        
+     
+    relabelled = find_connected_regions(label)
+    maximum_filter = itk.MinimumMaximumImageCalculator[type(relabelled)].New()
+    maximum_filter.SetImage(relabelled)
+    maximum_filter.ComputeMaximum()
+    
+    value_array = find_simple_truth_value(relabelled, gnd_truth)
+    
+    
+    assert len(value_array) == maximum_filter.GetMaximum()
+    assert np.all( value_array == [False] * len(value_array) )
+    
+
+#Testing the FINDING TRUTH Function
+@given(label = label_image_strategy(), gnd_truth = white_image_strategy() )
+@settings(deadline = None)
+def test_find_simple_truth_all_true (label, gnd_truth):
+     
+    relabelled = find_connected_regions(label)
+    maximum_filter = itk.MinimumMaximumImageCalculator[type(relabelled)].New()
+    maximum_filter.SetImage(relabelled)
+    maximum_filter.ComputeMaximum()
+    
+    value_array = find_simple_truth_value(relabelled, gnd_truth)
+    
+    
+    assert len(value_array) == maximum_filter.GetMaximum()
+    assert np.all( value_array == [True] * len(value_array) )
+    
+    
+    
+    
+    
+#Testing the FINDING TRUTH Function
+@given(label = label_image_strategy(), gnd_truth = black_image_strategy() )
+@settings(deadline = None)
+def test_find_Jaccard_truth_all_false(label, gnd_truth):
+    
+    relabelled = find_connected_regions(label)
+    maximum_filter = itk.MinimumMaximumImageCalculator[type(relabelled)].New()
+    maximum_filter.SetImage(relabelled)
+    maximum_filter.ComputeMaximum()
+    
+    value_array, jaccard_index = find_Jaccard_truth_value(relabelled, gnd_truth)
+    
+    
+    assert len(value_array) == maximum_filter.GetMaximum()
+    assert np.all( value_array == [False] * len(value_array) )
+    assert np.all( jaccard_index == [0] * len(value_array) )
+    
+    
+#Testing the FINDING TRUTH Function
+@given(label = label_image_strategy() )
+@settings(deadline = None)
+def test_find_Jaccard_truth_all_true(label):
+        
+     
+    relabelled = find_connected_regions(label)
+    maximum_filter = itk.MinimumMaximumImageCalculator[type(relabelled)].New()
+    maximum_filter.SetImage(relabelled)
+    maximum_filter.ComputeMaximum()
+    
+    value_array, jaccard_index = find_Jaccard_truth_value(relabelled, relabelled)
+    
+    
+    assert len(value_array) == maximum_filter.GetMaximum()
+    assert np.all( value_array == [True] * len(value_array) )
+    assert np.all( jaccard_index == [1] * len(value_array) )
+    
+    
+    
+#Testing the LABEL KILLER function
+@given(label = label_image_strategy() )
+@settings(deadline = None)
+def test_label_killer_all_dead(label):
+    
+    relabelled = find_connected_regions(label)
+    maximum_filter = itk.MinimumMaximumImageCalculator[type(relabelled)].New()
+    maximum_filter.SetImage(relabelled)
+    maximum_filter.ComputeMaximum()
+    
+    killer_array = np.array([False]*8)
+    
+    no_survivors = label_killer(label, killer_array)
+    
+    maximum_filter = itk.MinimumMaximumImageCalculator[type(no_survivors)].New()
+    maximum_filter.SetImage(no_survivors)
+    maximum_filter.ComputeMaximum()
+    
+    assert maximum_filter.GetMaximum() == 0
+    assert no_survivors.GetLargestPossibleRegion() == relabelled.GetLargestPossibleRegion()
+    
+    
+#Testing the LABEL KILLER function
+@given(label = label_image_strategy() )
+@settings(deadline = None)
+def test_label_killer_all_survived(label):
+    
+    relabelled = find_connected_regions(label)
+    maximum_filter = itk.MinimumMaximumImageCalculator[type(relabelled)].New()
+    maximum_filter.SetImage(relabelled)
+    maximum_filter.ComputeMaximum()
+    
+    killer_array = np.array([True]*8)
+    
+    survivors = label_killer(label, killer_array)
+    
+    post_maximum_filter = itk.MinimumMaximumImageCalculator[type(no_survivors)].New()
+    post_maximum_filter.SetImage(no_survivors)
+    post_maximum_filter.ComputeMaximum()
+    
+    assert maximum_filter.GetMaximum() == post_maximum_filter.GetMaximum()
+    assert survivors.GetLargestPossibleRegion() == relabelled.GetLargestPossibleRegion()
