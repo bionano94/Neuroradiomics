@@ -35,6 +35,7 @@ cd Neuroradiomics
 Using 'pip' install the required packages:
 
 ```console
+pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
