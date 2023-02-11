@@ -415,7 +415,7 @@ def label_killer (counted_label, surviving_array):
 
                     if counted_label.GetPixel(index) != 0 :
                         
-                        if surviving_array[ counted_label.GetPixel(index) - 1 ]: final_label.SetPixel(index, counted_label.GetPixel(index))
+                        if (surviving_array[ int(counted_label.GetPixel(index)) - 1 ]) : final_label.SetPixel(index, counted_label.GetPixel(index))
                         else: final_label.SetPixel(index, 0)
                         
                     else: final_label.SetPixel(index, 0)

@@ -391,7 +391,7 @@ def test_label_killer_all_dead(label):
     
     killer_array = np.array([False]*8)
     
-    no_survivors = label_killer(label, killer_array)
+    no_survivors = label_killer(relabelled, killer_array)
     
     maximum_filter = itk.MinimumMaximumImageCalculator[type(no_survivors)].New()
     maximum_filter.SetImage(no_survivors)
@@ -413,10 +413,10 @@ def test_label_killer_all_survived(label):
     
     killer_array = np.array([True]*8)
     
-    survivors = label_killer(label, killer_array)
+    survivors = label_killer(relabelled, killer_array)
     
-    post_maximum_filter = itk.MinimumMaximumImageCalculator[type(no_survivors)].New()
-    post_maximum_filter.SetImage(no_survivors)
+    post_maximum_filter = itk.MinimumMaximumImageCalculator[type(survivors)].New()
+    post_maximum_filter.SetImage(survivors)
     post_maximum_filter.ComputeMaximum()
     
     assert maximum_filter.GetMaximum() == post_maximum_filter.GetMaximum()
