@@ -4,7 +4,7 @@ A pipeline for the skull stripping and the segmentation of the MRI of a human he
 
 | **Authors**  | **Project** |  **Build Status** | **License** |
 |:------------:|:-----------:|:-----------------:|:-----------:|
-|[**N. Biondini**](https://github.com/bionano94) <br/> [**R.Biondi**](https://github.com/RiccardoBiondi)| **Neuroradiomics** | [![Ubuntu CI](https://github.com/bionano94/Neuroradiomics/workflows/Neuroradiomics%CI.yml/badge.svg)](https://github.com/bionano94/Neuroradiomics/actions/workflows/Neuroradiomics_python_CI.yml) | ![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg) |
+|[**N. Biondini**](https://github.com/bionano94) <br/> [**R.Biondi**](https://github.com/RiccardoBiondi)| **Neuroradiomics** | [![Ubuntu CI](https://github.com/bionano94/Neuroradiomics/action/workflows/Neuroradiomics_python_CI.yml/badge.svg?branch=master)](https://github.com/bionano94/Neuroradiomics/action/workflows/Neuroradiomics_python_CI.yml) | ![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg) |
 
 
 ## Table of Contents
@@ -35,6 +35,7 @@ cd Neuroradiomics
 Using 'pip' install the required packages:
 
 ```console
+pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
