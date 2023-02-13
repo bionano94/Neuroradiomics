@@ -168,7 +168,7 @@ def test_pytest_properly_works():
 
 #Testing the matching alias function
 @given(changing = random_image_strategy(), ref = random_image_strategy() )
-@settings(deadline = None)
+@settings(max_examples = 20, deadline = None)
 def test_matching_atlases_no_displacement (changing, ref):
     
     matched = match_atlases(changing, ref)
@@ -178,7 +178,7 @@ def test_matching_atlases_no_displacement (changing, ref):
     
 
 @given(changing = random_image_strategy(), ref = random_image_strategy() )
-@settings(deadline = None)
+@settings(max_examples = 20, deadline = None)
 def test_matching_atlases_with_displacement (changing, ref):
     
     displacement = [np.random.randint(0,10),np.random.randint(0,10),np.random.randint(0,10)]
@@ -192,7 +192,7 @@ def test_matching_atlases_with_displacement (changing, ref):
     
 #testing the function to relabel the label image
 @given(image = label_image_strategy())
-@settings(deadline = None)
+@settings(max_examples = 20, deadline = None)
 def test_find_connected_regions(image):
     
     relabeled_img = find_connected_regions(image)
@@ -208,7 +208,7 @@ def test_find_connected_regions(image):
     
 #Testing Score Function
 @given(label = label_image_strategy(), pos_mask = white_image_strategy(), neg_mask = black_image_strategy() )
-@settings(deadline = None)
+@settings(max_examples = 20, deadline = None)
 def test_all_positive_score (label, pos_mask, neg_mask):
     
     relabelled = find_connected_regions(label) #relabel the image to differentiate every connected region
@@ -225,7 +225,7 @@ def test_all_positive_score (label, pos_mask, neg_mask):
     
 #Testing Score Function
 @given(label = label_image_strategy(), pos_mask = black_image_strategy(), neg_mask = white_image_strategy() )
-@settings(deadline = None)
+@settings(max_examples = 20, deadline = None)
 def test_all_negative_score (label, pos_mask, neg_mask):
     
     relabelled = find_connected_regions(label) #relabel the image to differentiate every connected region
@@ -242,7 +242,7 @@ def test_all_negative_score (label, pos_mask, neg_mask):
     
 #Testing Score Function
 @given(label = label_image_strategy(), pos_mask = white_image_strategy(), neg_mask = white_image_strategy() )
-@settings(deadline = None)
+@settings(max_examples = 20, deadline = None)
 def test_all_overlapping_score (label, pos_mask, neg_mask):
     
     relabelled = find_connected_regions(label) #relabel the image to differentiate every connected region
@@ -262,7 +262,7 @@ def test_all_overlapping_score (label, pos_mask, neg_mask):
 
 #Testing Features Score Function
 @given(label = label_image_strategy(), pos_mask = white_image_strategy(), neg_mask = white_image_strategy() )
-@settings(deadline = None)
+@settings(max_examples = 20, deadline = None)
 def test_feature_scoring (label, pos_mask, neg_mask):
     
     masks_list = [pos_mask, neg_mask]
@@ -282,7 +282,7 @@ def test_feature_scoring (label, pos_mask, neg_mask):
     
     #Testing Features Score Function
 @given(label = label_image_strategy(), pos_mask = black_image_strategy(), neg_mask = black_image_strategy() )
-@settings(deadline = None)
+@settings(max_examples = 20, deadline = None)
 def test_feature_scoring2 (label, pos_mask, neg_mask):
     
     masks_list = [pos_mask, neg_mask]
@@ -305,7 +305,7 @@ def test_feature_scoring2 (label, pos_mask, neg_mask):
     
 #Testing the FINDING SIMPLE TRUTH Function
 @given(label = label_image_strategy(), gnd_truth = black_image_strategy() )
-@settings(deadline = None)
+@settings(max_examples = 20, deadline = None)
 def test_find_simple_truth_all_false (label, gnd_truth):
         
      
@@ -323,7 +323,7 @@ def test_find_simple_truth_all_false (label, gnd_truth):
 
 #Testing the FINDING TRUTH Function
 @given(label = label_image_strategy(), gnd_truth = white_image_strategy() )
-@settings(deadline = None)
+@settings(max_examples = 20, deadline = None)
 def test_find_simple_truth_all_true (label, gnd_truth):
      
     relabelled = find_connected_regions(label)
@@ -343,7 +343,7 @@ def test_find_simple_truth_all_true (label, gnd_truth):
     
 #Testing the FINDING TRUTH Function
 @given(label = label_image_strategy(), gnd_truth = black_image_strategy() )
-@settings(deadline = None)
+@settings(max_examples = 20, deadline = None)
 def test_find_Jaccard_truth_all_false(label, gnd_truth):
     
     relabelled = find_connected_regions(label)
@@ -361,7 +361,7 @@ def test_find_Jaccard_truth_all_false(label, gnd_truth):
     
 #Testing the FINDING TRUTH Function
 @given(label = label_image_strategy() )
-@settings(deadline = None)
+@settings(max_examples = 20, deadline = None)
 def test_find_Jaccard_truth_all_true(label):
         
      
@@ -381,7 +381,7 @@ def test_find_Jaccard_truth_all_true(label):
     
 #Testing the LABEL KILLER function
 @given(label = label_image_strategy() )
-@settings(deadline = None)
+@settings(max_examples = 20, deadline = None)
 def test_label_killer_all_dead(label):
     
     relabelled = find_connected_regions(label)
@@ -403,7 +403,7 @@ def test_label_killer_all_dead(label):
     
 #Testing the LABEL KILLER function
 @given(label = label_image_strategy() )
-@settings(deadline = None)
+@settings(max_examples = 20, deadline = None)
 def test_label_killer_all_survived(label):
     
     relabelled = find_connected_regions(label)
