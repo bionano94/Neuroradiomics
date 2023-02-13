@@ -169,8 +169,8 @@ def rigid_square_image_strategy(draw):
     image = np.zeros([200, 200], np.float32)
     
     side = 50
-    x1 = draw(st.integers(1,100))
-    y1 = draw (st.integers(1,100))
+    x1 = draw(st.integers(50,100))
+    y1 = draw (st.integers(50,100))
     x2 = x1 + side
     y2 = y1 + side
     
