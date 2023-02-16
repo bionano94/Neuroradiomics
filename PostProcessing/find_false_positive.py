@@ -158,8 +158,8 @@ def scoring (label_img, pos_mask, neg_mask, pos_val = 1, neg_val = 1):
 def feature_scoring (label_img, masks_list):
     '''
     This function evaluates the score for each feature of each labeled element (with a value greater than 0.5).
-    It returns 2 dimensional array. For every labeled element it contains n-masks + 1 elements.
-    The first feature is the average of the pixel's value for each label.
+    It returns 2 dimensional array. For every labeled element it contains n-masks + 2 elements.
+    The first feature is the average of the pixel's value for each label, the second value is the label volume.
     
     Parameters
     ----------
@@ -185,14 +185,16 @@ def feature_scoring (label_img, masks_list):
     #differentiating the labels
     counted_label = find_connected_regions (bin_label)
     
+    voxel_volume = label_img.GetSpacing()[0] * label_img.GetSpacing()[1] * label_img.GetSpacing()[2] 
+    
     #FINDING NUMBER OF LABELS
     maximum_filter = itk.MinimumMaximumImageCalculator[type(counted_label)].New()
     maximum_filter.SetImage(counted_label)
     maximum_filter.ComputeMaximum()
 
     index = itk.Index[3]()
-    pounded_score = np.array( [[0.] * (len(masks_list) + 1)] * maximum_filter.GetMaximum() ) #score for lesions divided pixels per lesion
-    score = np.array( [[0.] * (len(masks_list) + 1)] * maximum_filter.GetMaximum() ) #total scores for each lesion
+    pounded_score = np.array( [[0.] * (len(masks_list) + 2)] * maximum_filter.GetMaximum() ) #score for lesions divided pixels per lesion
+    score = np.array( [[0.] * (len(masks_list) + 2)] * maximum_filter.GetMaximum() ) #total scores for each lesion
     count = np.array( [0.] * maximum_filter.GetMaximum() ) #total number of pixels for lesion
     
     for index[0] in range( label_img.GetLargestPossibleRegion().GetSize()[0] ):
@@ -207,10 +209,15 @@ def feature_scoring (label_img, masks_list):
                     score[counted_label.GetPixel(index) - 1][0] += label_img.GetPixel(index)
                     
                     for i in range(len(masks_list)):
-                        score[counted_label.GetPixel(index) - 1][i + 1] += masks_list[i].GetPixel(index)
+                        score[counted_label.GetPixel(index) - 1][i + 2] += masks_list[i].GetPixel(index)
                
                     
-    pounded_score = score / count[:,None]
+    
+    for i in range(len(score)):
+        pounded_score[i][0] = score[i][0] / count[i]
+        pounded_score[i][1] = voxel_volume * count[i]
+        pounded_score[i][2] = score[i][2] / count[i]
+        pounded_score[i][3] = score[i][3] / count[i]
     
     return pounded_score, counted_label
 

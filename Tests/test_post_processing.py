@@ -273,9 +273,10 @@ def test_feature_scoring (label, pos_mask, neg_mask):
     maximum_filter.SetImage(relabelled)
     maximum_filter.ComputeMaximum()
     
+    adjusted_score = np.delete(score, 1, 1)
     
     assert len(score) == maximum_filter.GetMaximum()
-    assert np.all( score == [[1, 1, 1]] * len(score) )
+    assert np.all( adjusted_score == [[1, 1, 1]] * len(score) )
     
     
     
@@ -294,10 +295,11 @@ def test_feature_scoring2 (label, pos_mask, neg_mask):
     maximum_filter.SetImage(relabelled)
     maximum_filter.ComputeMaximum()
     
+    adjusted_score = np.delete(score, 1, 1)
     
     assert np.all(np.isclose( itk.GetArrayFromImage(relabelled_test), itk.GetArrayFromImage(relabelled), 1e-3, 1e-2 ) ) 
     assert len(score) == maximum_filter.GetMaximum()
-    assert np.all( score == [[1, 0, 0]] * len(score) )
+    assert np.all( adjusted_score == [[1, 0, 0]] * len(score) )
     
     
     
