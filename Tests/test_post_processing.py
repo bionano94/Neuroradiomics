@@ -423,3 +423,24 @@ def test_label_killer_all_survived(label):
     
     assert maximum_filter.GetMaximum() == post_maximum_filter.GetMaximum()
     assert survivors.GetLargestPossibleRegion() == relabelled.GetLargestPossibleRegion()
+    
+    
+    
+#Testing the SMALL LABEL REMOVER function
+@given(label = label_image_strategy() )
+@settings(max_examples = 20, deadline = None)
+def test_remove_small_labels_by_dimension(label):
+    
+    all_survived_label = remove_small_labels_by_dimension(label)
+    all_killed_label = remove_small_labels_by_dimension(label, 27001)
+    
+    relabeled_img = find_connected_regions(all_killed_label)
+    
+    #FINDING NUMBER OF LABELS
+    maximum_filter = itk.MinimumMaximumImageCalculator[type(relabeled_img)].New()
+    maximum_filter.SetImage(relabeled_img)
+    maximum_filter.ComputeMaximum()
+    
+    
+    assert np.all(np.isclose( itk.GetArrayFromImage(label), itk.GetArrayFromImage(all_survived_label), 1e-3, 1e-2 ) )
+    assert maximum_filter.GetMaximum() == 0

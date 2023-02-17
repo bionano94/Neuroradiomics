@@ -428,3 +428,72 @@ def label_killer (counted_label, surviving_array):
                     else: final_label.SetPixel(index, 0)
                         
     return final_label
+
+
+
+
+def remove_small_labels_by_dimension(label_img, num_pix_min = 1):
+    '''
+    This function removes every object with a number of pixel minor to a defined value.
+    
+    Parameters
+    ----------
+        label_img: itk Image object
+                   Image with the labels.
+                   
+        num_pix_min: int. Default = 1
+                     min number of pixels for which a lesion would be not deleted.
+    
+    Return
+    ------
+        final_label: itk Image object
+                     The Image with only the survived labels.
+    '''
+
+    #binarize the label
+    counted_label = find_connected_regions( binarize (label_img, 0.5) )
+    
+    #FINDING NUMBER OF LABELS
+    maximum_filter = itk.MinimumMaximumImageCalculator[type(counted_label)].New()
+    maximum_filter.SetImage(counted_label)
+    maximum_filter.ComputeMaximum()
+    
+    index = itk.Index[3]()
+    count = [0] * maximum_filter.GetMaximum() #total number of pixels for lesion
+    
+    #COUNTING THE NUMBER OF PIXELS FOR EVERY LESION
+    for index[0] in range( counted_label.GetLargestPossibleRegion().GetSize()[0] ):
+
+        for index[1] in range( counted_label.GetLargestPossibleRegion().GetSize()[1] ):
+
+            for index[2] in range( counted_label.GetLargestPossibleRegion().GetSize()[2] ):
+
+                if counted_label.GetPixel(index) != 0 :
+                    count[counted_label.GetPixel(index) - 1] += 1
+    
+    
+    Dimension = 3
+    ImageType = itk.template(label_img)[1]
+    final_label = itk.Image[ImageType].New()
+    
+    final_label.SetRegions( label_img.GetLargestPossibleRegion() )
+    final_label.SetSpacing( label_img.GetSpacing() )
+    final_label.SetOrigin( label_img.GetOrigin() )
+    final_label.SetDirection( label_img.GetDirection() )
+    final_label.Allocate()
+    
+    #DELETING LESIONS
+    for index[0] in range( counted_label.GetLargestPossibleRegion().GetSize()[0] ):
+
+        for index[1] in range( counted_label.GetLargestPossibleRegion().GetSize()[1] ):
+
+            for index[2] in range( counted_label.GetLargestPossibleRegion().GetSize()[2] ):
+
+                if counted_label.GetPixel(index) != 0 :
+                    
+                    if ( count[counted_label.GetPixel(index) - 1] < num_pix_min ): final_label.SetPixel(index, 0)
+                    else: final_label.SetPixel(index, label_img.GetPixel(index)) 
+                    
+                else: final_label.SetPixel(index, label_img.GetPixel(index))
+    
+    return final_label
