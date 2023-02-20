@@ -215,9 +215,11 @@ def feature_scoring (label_img, masks_list):
     
     for i in range(len(score)):
         pounded_score[i][0] = score[i][0] / count[i]
-        pounded_score[i][1] = voxel_volume * count[i]
-        pounded_score[i][2] = score[i][2] / count[i]
-        pounded_score[i][3] = score[i][3] / count[i]
+        pounded_score[i][1] = voxel_volume * count[i] #total volume = vocel_volume * number of pixels
+        
+        #everything in the mask must be averaged
+        for j in range(2:len(score[i]):
+            pounded_score[i][j] = score[i][j] / count[i]
     
     return pounded_score, counted_label
 
