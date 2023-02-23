@@ -228,7 +228,7 @@ def test_de_indexing (image, mask):
     
     image_array, index_array = indexing(image, mask)
     
-    de_indexed_image = de_indexing (image_array, index_array, image)
+    de_indexed_image = label_de_indexing (image_array, index_array, image)
     
     masked_image = negative_3d_masking (image, mask)
     
@@ -248,12 +248,26 @@ def test_index_de_index_validation (image, mask):
     
     image_array, index_array = indexing(image, mask) 
     
-    de_indexed_image = de_indexing (image_array, index_array, image)
+    de_indexed_image = label_de_indexing (image_array, index_array, image)
     
     
     #same image
     assert np.all( np.isclose( itk.GetArrayFromImage(de_indexed_image), itk.GetArrayFromImage(image), 1e-03, 1e-03))
     
+
+#Testing if indexing and de-indexing give the same image
+
+@given (image = cubic_image_strategy(), mask = binary_uniform_cube_image_strategy())
+@settings(max_examples=20, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
+def test_float_index_de_index_validation (image, mask):
+    
+    image_array, index_array = indexing(image, mask) 
+    
+    de_indexed_image = float_de_indexing (image_array, index_array, image)
+    
+    
+    #same image
+    assert np.all( np.isclose( itk.GetArrayFromImage(de_indexed_image), itk.GetArrayFromImage(image), 1e-03, 1e-03))
     
     
     
@@ -325,6 +339,8 @@ def test_4_weights_function (mask1, mask2, mask3):
     #la somma dei pesi deve essere uguale ad 1. Uso isclose per evitare problemi di approssimazione
     assert np.isclose( (weights[0] + weights[1] + weights[2] + weights[3]), 1)
     
+    
+
 #####################à#
 # Utilities Functions #
 #######################

@@ -60,7 +60,7 @@ def indexing (image, mask):
 
 
 
-def de_indexing (image_array, index_array, reference_image, first_label_value = None ):
+def label_de_indexing (image_array, index_array, reference_image, first_label_value = None ):
     '''
     This function takes a 1D array with only the Grey Levels and builds an image with . 
     Useful to build an ITK labels image from a 1D vector.
@@ -105,6 +105,17 @@ def de_indexing (image_array, index_array, reference_image, first_label_value = 
     image.SetDirection( reference_image.GetDirection() )
     image.Allocate()
     
+    
+    #create a black image
+    for index[0] in range( image.GetLargestPossibleRegion().GetSize()[0] ):
+    
+        for index[1] in range( image.GetLargestPossibleRegion().GetSize()[1] ):
+        
+            for index[2] in range( image.GetLargestPossibleRegion().GetSize()[2] ):
+                
+                image.SetPixel(index, 0)
+                
+    
     if first_label_value != None:
         for i in range(len(index_array)):
             #Set the itk index as the i_th index of the index_array
@@ -123,6 +134,87 @@ def de_indexing (image_array, index_array, reference_image, first_label_value = 
             
             #Set the Pixel value of the image as the one in the array
                 image.SetPixel( index, int(image_array[i]) )
+           
+    return image
+
+
+
+
+
+def float_de_indexing (image_array, index_array, reference_image, first_label_value = None ):
+    '''
+    This function takes a 1D array with only the Grey Levels and builds an image with . 
+    Useful to build an ITK labels image from a 1D vector.
+    
+    Parameters
+    ----------
+        image_array: 1D list of int
+            The array of the image.
+        
+        index_array: 1D list of itk.Index
+            The array with the ITK indexes of the pixel in the array.
+            
+        reference_image: itk Image
+            The image you want to use as referement to build the image. Must be of the same Size of the original indexed image.
+            
+        first_label_value: int number
+            The first value from which you assign the gray level values. A sort of "zero value".
+            It is useful when you build a labels image to set the first label value.
+            Default is None.
+            Useful to put =1 when de_indexing a label so the background (the part of the image not in the index_array) will be 0.
+            
+    Return
+    ------
+        image: itk Image object
+            The image obtained from the array. Pixels will be casted to int type.
+        
+    '''
+    
+    Dimension = 3
+    ImageType = itk.template(reference_image)[1]
+    
+    #Creation of the new itk image
+    image = itk.Image[ImageType].New()
+    
+    #Creation of the itk Index object
+    index = itk.Index[Dimension]()
+    
+    #Setting the new image space as the one of the original (reference) image.
+    image.SetRegions( reference_image.GetLargestPossibleRegion() )
+    image.SetSpacing( reference_image.GetSpacing() )
+    image.SetOrigin( reference_image.GetOrigin() )
+    image.SetDirection( reference_image.GetDirection() )
+    image.Allocate()
+    
+    
+    #create a black image
+    for index[0] in range( image.GetLargestPossibleRegion().GetSize()[0] ):
+    
+        for index[1] in range( image.GetLargestPossibleRegion().GetSize()[1] ):
+        
+            for index[2] in range( image.GetLargestPossibleRegion().GetSize()[2] ):
+                
+                image.SetPixel(index, 0)
+                
+    
+    if first_label_value != None:
+        for i in range(len(index_array)):
+            #Set the itk index as the i_th index of the index_array
+                index[0] = int( index_array[i][0] )
+                index[1] = int( index_array[i][1] )
+                index[2] = int( index_array[i][2] )
+            
+            #Set the Pixel value of the image as the one in the array
+                image.SetPixel( index, image_array[i] + first_label_value )
+    else:
+        for i in range(len(index_array)):
+            #Set the itk index as the i_th index of the index_array
+                index[0] = int( index_array[i][0] )
+                index[1] = int( index_array[i][1] )
+                index[2] = int( index_array[i][2] )
+            
+            #Set the Pixel value of the image as the one in the array
+                image.SetPixel( index, image_array[i] )
            
     return image
 
@@ -554,13 +646,166 @@ def brain_segmentation ( brain, brain_mask, wm_mask, gm_mask, csf_mask, auto_mea
     label_array = model.predict( np.reshape( brain_array, (-1,1) ) )
     
     #transforming the label array into an image. The 1st label value is 1 so wm is 1 and only bg is 0.
-    label_image = de_indexing (label_array, index_array, brain, 1)
-    
-    label_image
+    label_image = label_de_indexing (label_array, index_array, brain, 1)
     
     print ('Your Brain is segmented')
     
     return label_image
+
+
+
+
+
+def brain_probability_segmentation ( brain, brain_mask, wm_mask, gm_mask, csf_mask, auto_mean = False, undefined = False ):
+    '''
+    This function segment a brain image. Returning a map of probability for each tissue.
+    
+    Parameters
+    ----------
+        brain: itk image object
+            The brain image. The brain must be already extracted.
+            
+        brain_mask: itk image object
+            Binary mask used for the skull stripping. A binary image of the brain.
+            
+        wm_mask: itk image object.
+            The wm probability mask. It must be already in the brain space and it must be masked with the same brain
+            mask of the brain.
+            
+        gm_mask: itk image object.
+            The gm probability mask. It must be already in the brain space and it must be masked with the same brain
+            mask of the brain.
+            
+        csf_mask: itk image object.
+            The csf probability mask. It must be already in the brain space and it must be masked with the same brain
+            mask of the brain.
+        
+        auto_mean: boolean. Default = False.
+            It True the segmentation will try to find the mean values for each class. If false are used default ones.
+            
+            
+        undefined: boolean. Default = False.
+            It True the segmentation will find also a fourth classe with the not certain pixels.
+            
+    Returns
+    -------
+        wm: itk image object.
+            Probability map for the white matter
+    
+        gm: itk image object.
+            Probability map for the grey matter
+            
+        csf: itk image object.
+            Probability map for the cerebrospinal fluid
+    '''
+    #Brain normalization
+    
+    #casting of the mask for the normalization.
+    OutputType = itk.Image[itk.UC, 3]
+    cast_filter = itk.CastImageFilter[type(brain_mask), OutputType].New()
+    cast_filter.SetInput(brain_mask)
+    cast_filter.Update()
+    brain_mask = cast_filter.GetOutput()
+    
+    norm_brain_filter = itk_gaussian_normalization (brain, brain_mask)
+    
+    #I change the physical space because the normalization have changed it.
+    matching_filter = match_physical_spaces(norm_brain_filter.GetOutput(), brain)
+    matching_filter.Update()
+    brain = matching_filter.GetOutput()
+    
+    #mask back to float
+    cast_filter = itk.CastImageFilter[type(brain_mask), OutputType].New()
+    cast_filter.SetInput(brain_mask)
+    cast_filter.Update()
+    brain_mask = cast_filter.GetOutput()
+    
+    
+    #linearize and indexing the brain obtaining the image array and the index array
+    #(the index array is useful to build the itk label image)
+    brain_array, index_array = indexing (brain, brain_mask)
+    
+    
+    
+    #defining the model to be used to the segmentation
+    
+    if  auto_mean :
+        
+        print ('The mean values and the weights will be found automatically')
+        #Matching the physical spaces of the masks and the brain
+    
+        matching_filter = match_physical_spaces(wm_mask, brain)
+        matching_filter.Update()
+        wm_mask = matching_filter.GetOutput()
+    
+    
+        matching_filter = match_physical_spaces(gm_mask, brain)
+        matching_filter.Update()
+        gm_mask = matching_filter.GetOutput()
+    
+        matching_filter = match_physical_spaces(csf_mask, brain)
+        matching_filter.Update()
+        csf_mask = matching_filter.GetOutput()
+        
+        if  undefined :
+            n_classes = 4
+            model = GaussianMixture(
+                        n_components = n_classes,
+                        covariance_type = 'full',
+                        tol = 0.01,
+                        max_iter = 100000,
+                        means_init = np.reshape( find_4_means ( brain, wm_mask, gm_mask, csf_mask), (-1,1) ),
+                        weights_init = find_prob_4_weights (wm_mask, gm_mask, csf_mask) 
+                        )
+            
+        else :
+            n_classes = 3
+            model = GaussianMixture(
+                        n_components = n_classes,
+                        covariance_type = 'full',
+                        tol = 0.01,
+                        max_iter = 100000,
+                        means_init = np.reshape( find_means ( brain, wm_mask, gm_mask, csf_mask), (-1,1) ),
+                        weights_init = find_prob_weights (wm_mask, gm_mask, csf_mask) 
+                        )
+    else :
+        
+        print ('The mean values will be defaults ones and the weights will be found automatically.')
+        
+        #Default mean values
+        wm_mean  = 0.55
+        gm_mean  = 0
+        csf_mean = -1.5
+        
+        print ('The mean values used are: wm: ',wm_mean ,'; gm: ',gm_mean ,'; csf: ', csf_mean)
+        
+        n_classes = 3
+        model = GaussianMixture(
+                        n_components = n_classes,
+                        covariance_type = 'full',
+                        tol = 0.01,
+                        max_iter = 100000,
+                        means_init = np.reshape( (wm_mean, gm_mean, csf_mean), (-1,1) ),
+                        weights_init = find_prob_weights (wm_mask, gm_mask, csf_mask) 
+                        )
+            
+    
+    #updating the funtion to find the labels
+    model.fit( np.reshape( brain_array, (-1,1) ) )
+    label_matrix = model.predict_proba( np.reshape( brain_array, (-1,1) ) )
+    
+    wm_array = label_matrix[:,0]
+    gm_array = label_matrix[:,1]
+    csf_array = label_matrix[:,2]
+    
+    #transforming the label array into an image. The 1st label value is 1 so wm is 1 and only bg is 0.
+    wm = float_de_indexing (wm_array, index_array, brain)
+    gm  = float_de_indexing (gm_array, index_array, brain)
+    csf  = float_de_indexing (csf_array, index_array, brain)
+    
+    print ('Your Brain is segmented')
+    
+    return wm, gm, csf
 
 
 

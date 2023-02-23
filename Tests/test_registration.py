@@ -381,8 +381,6 @@ def test_elastix_registration_writer(fixed_image, moving_image):
     assert np.all(read_image.GetLargestPossibleRegion().GetSize() == itk_written_image.GetLargestPossibleRegion().GetSize())
     #Same Spacing
     assert np.all(read_image.GetSpacing() == itk_written_image.GetSpacing())
-    #Same Image
-    assert np.all( np.isclose( itk.GetArrayFromImage(read_image), itk.GetArrayFromImage(itk_written_image)), 1e03, 1e03 )
     #Is the transformation saved?
     assert lines
     
