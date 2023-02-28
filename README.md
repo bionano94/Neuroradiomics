@@ -48,6 +48,10 @@ python setup.py develop --user
 ## Usage
 The repository main functions are divided in 3 modules. In each one is possible to find useful functions to the related applications.
 
+In the drectory "Examples" can be found a jupyter notebook file in which are demonstrated the main functions here collected.
+
+Next a brief explaining of the main modules.
+
 ### Registration
 In registration module there are some useful functions that applies elastix[1] and transformix filters.
 It aims to rapidly and automaticly apply a predetrmined Rigid transformation (suited for co-registering two scans of the same patient taken with different modalities) or to apply a Multimap (Rigid -> Affine -> BSpline) transformatione (suited for registering an Atlas over a patient scan).
