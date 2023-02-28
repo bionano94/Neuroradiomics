@@ -1,6 +1,6 @@
 # Neuroradiomics
 
-A pipeline for the skull stripping and the segmentation of the MRI of a human head.
+This project is intended to be a bunch of python's functions useful for the brain tissue segmentation of a brain MRI scan.
 
 | **Authors**  | **Project** |  **Build Status** | **License** |
 |:------------:|:-----------:|:-----------------:|:-----------:|
@@ -44,6 +44,27 @@ Now you're ready to build the package:
 ```console
 python setup.py develop --user
 ```
+
+## Usage
+The repository main functions are divided in 3 modules. In each one is possible to find useful functions to the related applications.
+
+### Registration
+In registration module there are some useful functions that applies elastix[1] and transformix filters.
+It aims to rapidly and automaticly apply a predetrmined Rigid transformation (suited for co-registering two scans of the same patient taken with different modalities) or to apply a Multimap (Rigid -> Affine -> BSpline) transformatione (suited for registering an Atlas over a patient scan).
+
+There are also functions that permits to easily apply write on file the transformations applier or to modify them.
+
+### Skull Stripping
+The skulls_stripping module contains functions that permits the brain extraction from a head MRI scan.
+There are two main functions, both requires the usage of an atlas with itk brain mask to be used.
+
+1. skull_stripping_mask that permits to obtain a brain mask for the head image as well as the transformation prameters used to register the atlas over the stripped image;
+2. skull_stripper that returns only the extracted brain
+
+### Segmentation
+In segmentation module there are funtions that permits an automatic segmentation of white mater, grey matter, cerebrospinal fluid and background from a brain image.
+The main segmentations functions necessities for a brain already extracted as well as the brain mask.
+To be used they necessity of an atlas with probability maps for the tissues.
 
 ## References
 
