@@ -12,3 +12,6 @@ __pycache__/
 #Jupyter Utility
 Console.ipynb
 Console*
+
+#Others Directory
+Neuroradiomics.egg-info
