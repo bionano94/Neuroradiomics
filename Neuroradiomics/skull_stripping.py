@@ -441,7 +441,14 @@ def skull_stripping_mask (image, atlas, mask, transformation_return = False):
     normalized_first_brain = cast_filter.GetOutput()
     
     #thresholding the normalized_brain
-    thresholded_first_brain = normal_threshold( normalized_first_brain, 3 )
+    InputType = type(normalized_first_brain)
+    motsu = itk.OtsuMultipleThresholdsImageFilter[InputType, InputType].New()
+    motsu.SetInput(normalized_first_brain)
+    motsu.SetNumberOfThresholds(3)
+    motsu.Update()
+    
+    thresholded_first_brain = binarize(motsu.GetOutput(), hi_value = 3 )
+    
     
     #eroding the mask to better find the largest connected region
     eroded_mask = binary_eroding( thresholded_first_brain )
