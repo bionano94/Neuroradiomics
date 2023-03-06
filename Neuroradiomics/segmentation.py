@@ -60,7 +60,7 @@ def indexing (image, mask):
 
 
 
-def de_indexing (image_array, index_array, reference_image, first_label_value = None ):
+def label_de_indexing (image_array, index_array, reference_image, first_label_value = None ):
     '''
     This function takes a 1D array with only the Grey Levels and builds an image with . 
     Useful to build an ITK labels image from a 1D vector.
@@ -104,6 +104,17 @@ def de_indexing (image_array, index_array, reference_image, first_label_value = 
     image.SetOrigin( reference_image.GetOrigin() )
     image.SetDirection( reference_image.GetDirection() )
     image.Allocate()
+    
+    
+    #create a black image
+    for index[0] in range( image.GetLargestPossibleRegion().GetSize()[0] ):
+    
+        for index[1] in range( image.GetLargestPossibleRegion().GetSize()[1] ):
+        
+            for index[2] in range( image.GetLargestPossibleRegion().GetSize()[2] ):
+                
+                image.SetPixel(index, 0)
+                
     
     if first_label_value != None:
         for i in range(len(index_array)):
@@ -524,6 +535,7 @@ def brain_segmentation ( brain, brain_mask, wm_mask, gm_mask, csf_mask, auto_mea
                         covariance_type = 'full',
                         tol = 0.01,
                         max_iter = 1000,
+                        init_params = 'k-means++',
                         means_init = np.reshape( find_means ( brain, wm_mask, gm_mask, csf_mask), (-1,1) ),
                         weights_init = find_prob_weights (wm_mask, gm_mask, csf_mask) 
                         )
@@ -554,7 +566,7 @@ def brain_segmentation ( brain, brain_mask, wm_mask, gm_mask, csf_mask, auto_mea
     label_array = model.predict( np.reshape( brain_array, (-1,1) ) )
     
     #transforming the label array into an image. The 1st label value is 1 so wm is 1 and only bg is 0.
-    label_image = de_indexing (label_array, index_array, brain, 1)
+    label_image = label_de_indexing (label_array, index_array, brain, 1)
     
     label_image
     
