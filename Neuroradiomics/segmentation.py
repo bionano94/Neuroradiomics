@@ -536,7 +536,7 @@ def brain_segmentation ( brain, brain_mask, wm_mask, gm_mask, csf_mask, auto_mea
                         tol = 0.01,
                         max_iter = 1000,
                         init_params = 'k-means++',
-                        means_init = np.reshape( find_means ( brain, wm_mask, gm_mask, csf_mask), (-1,1) ),
+                        #means_init = np.reshape( find_means ( brain, wm_mask, gm_mask, csf_mask), (-1,1) ),
                         weights_init = find_prob_weights (wm_mask, gm_mask, csf_mask) 
                         )
     else :
