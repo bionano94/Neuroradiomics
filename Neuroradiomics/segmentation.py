@@ -146,25 +146,25 @@ def label_de_indexing (image_array, index_array, reference_image, first_label_va
     
 #Three Classes Weights
     
-def find_prob_weights (wm_mask, gm_mask, csf_mask):
+def find_prob_weights (csf_mask, gm_mask, wm_mask):
     '''
     This function finds the proportions of the sizes of the white matter, grey matter mask, and csf mask of a brain.
     
     Parameters
     ----------
-        wm_mask: itk image
-            The wm mask.
-        
-        gm_mask: itk image
-            The gm mask.
+        csf_mask: itk image object. Must be binary.
+            The probability mask for the csf.
             
-        csf_mask: itk image
-            The csf mask.
+        gm_mask: itk image object. Must be binary.
+            The probability mask for the gm.
+            
+        wm_mask: itk image object. Must be binary.
+            The probability mask for the wm.
     
     Return
     ------
         weigths: 1D list of floats.
-            A list with the weights of the wm [0], gm [1], csf[2]. The sum is normalized to 1.
+            A list with the weights of the wm [2], gm [1], csf[0]. The sum is normalized to 1.
     
     '''
     
@@ -202,34 +202,33 @@ def find_prob_weights (wm_mask, gm_mask, csf_mask):
     csf_weight = csf_pixels/tot_pixel
     
     #creating a list with all the weights.
-    weights = [wm_weight, gm_weight, csf_weight]
-    print ('The estimated weights are: wm = ', weights[0] ,'; gm = ', weights[1] ,'; csf = ', weights[2])
+    weights = [csf_weight, gm_weight, wm_weight]
     
     return weights
 
 
 #Four Classes weights
 
-def find_prob_4_weights (wm_mask, gm_mask, csf_mask):
+def find_prob_4_weights (csf_mask, gm_mask, wm_mask):
     '''
     This function finds the proportions of the sizes of the white matter, grey matter mask, and csf mask of a brain, including
     a fourth class that represents the indecision between white matter and grey matter.
     
     Parameters
     ----------
-        wm_mask: itk image
-            The wm mask.
-        
-        gm_mask: itk image
-            The gm mask.
+        csf_mask: itk image object. Must be binary.
+            The probability mask for the csf.
             
-        csf_mask: itk image
-            The csf mask.
+        gm_mask: itk image object. Must be binary.
+            The probability mask for the gm.
+            
+        wm_mask: itk image object. Must be binary.
+            The probability mask for the wm.
     
     Return
     ------
         weigths: 1D list of floats.
-            A list with the weights of the wm [0], gm [1], csf[2], indecision_class[3]. The sum is normalized to 1.
+            A list with the weights of the wm [2], gm [1], csf[0], indecision_class[3]. The sum is normalized to 1.
     
     '''
     
@@ -275,8 +274,7 @@ def find_prob_4_weights (wm_mask, gm_mask, csf_mask):
     csf_weight = csf_pixels/tot_pixel
     idk_weight = idk_pixels/tot_pixel
     
-    weights = [wm_weight, gm_weight, csf_weight, idk_weight]
-    print ('The estimated weights are: wm = ', weights[0] ,'; gm = ', weights[1] ,'; csf = ', weights[2], '; uncertains = ', weights[3])
+    weights = [csf_weight, gm_weight, wm_weight, idk_weight]
     
     return weights
 
@@ -320,53 +318,73 @@ def gaussian_pixel_distribution_params_evaluation (image, label):
     return results
 
 
-def find_means (brain, wm_mask, gm_mask, csf_mask, prob_threshold = 0.7):
+def find_means (brain, brain_mask, csf_mask, gm_mask, wm_mask):
     '''
-    This function finds a rough mean for the masked pixels.
+    This function finds a mean for the masked pixels.
     
     Parameters
     ----------
         brain: itk image object.
             The brain image of which you want to evaluate the means values.
             
-        wm_mask: itk image object. Must be binary.
-            The probability mask for the wm.
-            
-        gm_mask: itk image object. Must be binary.
-            The probability mask for the gm.
+        brain_mask: itk image object
+            Binary mask used for the skull stripping. A binary image of the brain.
             
         csf_mask: itk image object. Must be binary.
             The probability mask for the csf.
             
-        prob_threshold: float value.
-            The min value of probability you want to consider as valid. Default is 0.51
+        gm_mask: itk image object. Must be binary.
+            The probability mask for the gm.
+            
+        wm_mask: itk image object. Must be binary.
+            The probability mask for the wm.
             
     
     Returns
     -------
         means: list of float.
             The evaluated means.
-            means[0] = wm_mean
+            means[0] = csf_mean
             means[1] = gm_mean
-            means[2] = csf_mean
+            means[2] = wm_mean
     '''
     
-    min_wm = binarize(wm_mask, prob_threshold)
-    min_gm = binarize(gm_mask, prob_threshold)
-    min_csf = binarize(csf_mask, prob_threshold)
+    #converting everything in numpy array. This is done because ITK functions in python are not always wrapped for every type. 
+    brain_array = itk.GetArrayFromImage(brain) 
+    wm_array = itk.GetArrayFromImage(wm_mask)
+    gm_array = itk.GetArrayFromImage(gm_mask)
+    csf_array = itk.GetArrayFromImage(csf_mask)
+    brain_mask_array = itk.GetArrayFromImage(brain_mask)
+
+    #setting a greater value for bg in order to have it correctly selected in prob array
+    background = np.where(brain_mask_array == 0, 2, 0)
     
-    wm_mean = gaussian_pixel_distribution_params_evaluation(brain, min_wm)[0]
-    gm_mean = gaussian_pixel_distribution_params_evaluation(brain, min_gm)[0]
-    csf_mean = gaussian_pixel_distribution_params_evaluation(brain, min_csf)[0]
+    #finding for each pixel what is its more probable class (bg = 0, wm = 3, gm = 2, csf = 1) 
+    four_dim_array = [background, csf_array, gm_array, wm_array]
+    prob_array = np.argmax(four_dim_array, 0)
     
-    means = [wm_mean, gm_mean, csf_mean]
+    #recreating the pixels array
+    wm_array = np.where(prob_array == 3, 1, 0)
+    gm_array = np.where(prob_array == 2, 1, 0)
+    csf_array = np.where(prob_array == 1, 1, 0)
+
+    #creating arrays in which there are only pixels of the brain where those pixels are of that class
+    wm_brain = np.where (wm_array == 1, brain_array, 0)
+    gm_brain = np.where (gm_array == 1, brain_array, 0)
+    csf_brain = np.where (csf_array == 1, brain_array, 0)
     
-    print ('The estimated means are: wm = ', means[0] ,'; gm = ', means[1] ,'; csf = ' , means[2])
     
+    #find means
+    wm_mean = np.sum(wm_brain)/np.count_nonzero(wm_array)
+    gm_mean = np.sum(gm_brain)/np.count_nonzero(gm_array)
+    csf_mean = np.sum(csf_brain)/np.count_nonzero(csf_array)
+    
+    means = [csf_mean, gm_mean, wm_mean]
+        
     return means
 
 
-def find_4_means (brain, wm_mask, gm_mask, csf_mask, prob_threshold = 0.7):
+def find_4_means (brain, csf_mask, gm_mask, wm_mask, prob_threshold = 0.7):
     '''
     This function finds a rough mean for the masked pixels. This is useful for the 4 class segmentation, with the uncerain pixels. (not sure if wm or gm)
     
@@ -375,14 +393,14 @@ def find_4_means (brain, wm_mask, gm_mask, csf_mask, prob_threshold = 0.7):
         brain: itk image object.
             The brain image of which you want to evaluate the means values.
             
-        wm_mask: itk image object. Must be binary.
-            The probability mask for the wm.
+        csf_mask: itk image object. Must be binary.
+            The probability mask for the csf.
             
         gm_mask: itk image object. Must be binary.
             The probability mask for the gm.
             
-        csf_mask: itk image object. Must be binary.
-            The probability mask for the csf.
+        wm_mask: itk image object. Must be binary.
+            The probability mask for the wm.
             
         prob_threshold: float value.
             The min value of probability you want to consider as valid. Default is 0.51
@@ -392,9 +410,9 @@ def find_4_means (brain, wm_mask, gm_mask, csf_mask, prob_threshold = 0.7):
     -------
         means: list of float.
             The evaluated means.
-            means[0] = wm_mean
+            means[0] = csf_mean
             means[1] = gm_mean
-            means[2] = csf_mean
+            means[2] = wm_mean
             means[3] = uncertain_mean
     '''
     
@@ -411,10 +429,8 @@ def find_4_means (brain, wm_mask, gm_mask, csf_mask, prob_threshold = 0.7):
     csf_mean = gaussian_pixel_distribution_params_evaluation(brain, min_csf)[0]
     idk_mean = gaussian_pixel_distribution_params_evaluation(brain, idk)[0]
     
-    means = [wm_mean, gm_mean, csf_mean, idk_mean]
-    
-    print ('The estimated means are: wm = ', means[0] ,'; gm = ', means[1] ,'; csf = ' , means[2], '; uncertains = ', means[3])
-    
+    means = [csf_mean, gm_mean, wm_mean, idk_mean]
+        
     return means
 
 
@@ -461,9 +477,9 @@ def brain_segmentation ( brain, brain_mask, wm_mask, gm_mask, csf_mask, auto_mea
         label_image: itk image object.
             The label image.
             0 is background
-            1 is wm
+            1 is csf
             2 is gm
-            3 is csf
+            3 is wm
             Is uncertain is setted to True 4 are the uncertain pixels.
     
     '''
@@ -496,69 +512,60 @@ def brain_segmentation ( brain, brain_mask, wm_mask, gm_mask, csf_mask, auto_mea
     brain_array, index_array = indexing (brain, brain_mask)
     
     
+    #Masking also the Probability maps
+    wm_mask = negative_3d_masking(wm_mask, brain_mask)
+    gm_mask = negative_3d_masking(gm_mask, brain_mask)
+    csf_mask = negative_3d_masking(csf_mask, brain_mask)
+
     
-    #defining the model to be used to the segmentation
-    
-    if  auto_mean :
+    #INITIALIZING THE MODELS PARAMETERS    
+    if  auto_mean : #if automean the proposed function will be used to find the means values
         
-        print ('The mean values and the weights will be found automatically')
         #Matching the physical spaces of the masks and the brain
     
         matching_filter = match_physical_spaces(wm_mask, brain)
-        matching_filter.Update()
         wm_mask = matching_filter.GetOutput()
     
-    
         matching_filter = match_physical_spaces(gm_mask, brain)
-        matching_filter.Update()
         gm_mask = matching_filter.GetOutput()
     
         matching_filter = match_physical_spaces(csf_mask, brain)
-        matching_filter.Update()
         csf_mask = matching_filter.GetOutput()
-        
-        if  undefined :
-            n_classes = 4
-            model = GaussianMixture(
-                        n_components = n_classes,
-                        covariance_type = 'full',
-                        tol = 0.01,
-                        max_iter = 10000,
-                        means_init = np.reshape( find_4_means ( brain, wm_mask, gm_mask, csf_mask), (-1,1) ),
-                        weights_init = find_prob_4_weights (wm_mask, gm_mask, csf_mask) 
-                        )
+                
+    
+        if undefined :
+              means = np.reshape(find_4_means(brain, csf_mask, gm_mask, wm_mask), (-1,1))
             
-        else :
-            n_classes = 3
-            model = GaussianMixture(
-                        n_components = n_classes,
-                        covariance_type = 'full',
-                        tol = 0.01,
-                        max_iter = 1000,
-                        init_params = 'k-means++',
-                        #means_init = np.reshape( find_means ( brain, wm_mask, gm_mask, csf_mask), (-1,1) ),
-                        weights_init = find_prob_weights (wm_mask, gm_mask, csf_mask) 
-                        )
-    else :
+        else: means = np.reshape(find_means(brain, brain_mask, csf_mask, gm_mask, wm_mask), (-1,1))
+                
+        #Adding a check for the mean values. 
+        #We should obtain mean values sufficiently different and in order csf < gm < wm.
+        #if not then the mean values will be initialized by the k-means++ algorithm of Scikit-Learn
+        if ( (means[0]+0.1) >= means[1] ) or ( (means[1] + 0.1) >= means[2] ) :
+            means = None
+    
+    else: means = None #The k-means++ algorithm of Scikit-Learn will be used to initialize the means
+    
+    
+    if undefined:
+        n_classes = 4
+        weights = find_prob_4_weights(csf_mask, gm_mask, wm_mask)
         
-        print ('The mean values will be defaults ones and the weights will be found automatically.')
-        
-        #Default mean values
-        wm_mean  = 0.55
-        gm_mean  = 0
-        csf_mean = -1.5
-        
-        print ('The mean values used are: wm: ',wm_mean ,'; gm: ',gm_mean ,'; csf: ', csf_mean)
-        
+    else:
         n_classes = 3
-        model = GaussianMixture(
-                        n_components = n_classes,
-                        covariance_type = 'full',
-                        tol = 0.01,
-                        max_iter = 1000,
-                        means_init = np.reshape( (wm_mean, gm_mean, csf_mean), (-1,1) ),
-                        weights_init = find_prob_weights (wm_mask, gm_mask, csf_mask) 
-                        )
+        weights = find_prob_weights(csf_mask, gm_mask, wm_mask)
+        
+        
+    
+    model = GaussianMixture(
+                n_components = n_classes,
+                covariance_type = 'full',
+                tol = 0.01,
+                max_iter = 10000,
+                init_params = 'k-means++',
+                means_init = means,
+                weights_init = weights
+                )
             
     
     #updating the funtion to find the labels
@@ -569,9 +576,7 @@ def brain_segmentation ( brain, brain_mask, wm_mask, gm_mask, csf_mask, auto_mea
     label_image = label_de_indexing (label_array, index_array, brain, 1)
     
     label_image
-    
-    print ('Your Brain is segmented')
-    
+        
     return label_image
 
 
