@@ -20,9 +20,9 @@ def match_physical_spaces(image, reference):
             resampler: itk Filter object.
                     The filter used to match the physical space. 
                     In order to obtain the matched image call the GetOutput() function to the output of this function.
-                    (e.g. resampler = match_physical_spaces(image, reference)
+                    e.g..: resampler = match_physical_spaces(image, reference)
                           new_image = resampler.GetOutput()
-                          )
+                          
     '''
 
     NNInterpolatorType = itk.NearestNeighborInterpolateImageFunction[type(image),itk.D]
