@@ -1,5 +1,6 @@
 import itk
 import numpy as np
+import sys
 from sklearn.mixture import GaussianMixture
 
 from Neuroradiomics.normalization import *
@@ -154,6 +155,7 @@ def find_prob_weights (csf_mask, gm_mask, wm_mask):
     ------
         weigths: 1D list of floats.
             A list with the weights of the wm [2], gm [1], csf[0]. The sum is normalized to 1.
+            (If the given masks are empty an error will be print and None will be returned instead.)
     
     '''
     
@@ -179,8 +181,8 @@ def find_prob_weights (csf_mask, gm_mask, wm_mask):
     tot_pixel = np.count_nonzero( tot_array )
     
     if tot_pixel == 0 :
-        print( 'All your masks are empty!!!')
-        return [0,0,0]
+        print( 'Error in function "find_prob_weights": all the provided masks are empty! None will be returned instead.', file = sys.stderr)
+        return None #None allows for the automatic initialization fo the parameters in the segmentation function
     
     #because both background and wm will be labelled as 0, the wm number of pixels is find using subtraction.
     wm_pixels = tot_pixel - gm_pixels - csf_pixels
