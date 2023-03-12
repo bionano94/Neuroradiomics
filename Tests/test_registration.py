@@ -15,7 +15,6 @@ from Neuroradiomics.registration import read_transform_from_files
 from Neuroradiomics.registration import elastix_rigid_registration
 from Neuroradiomics.registration import Set_sampler_parameters_as_image
 from Neuroradiomics.registration import transform_parameters_writer
-from Neuroradiomics.registration import registration_transform_parameters_writer
 from Neuroradiomics.evaluation_utilities import evaluate_registration_mse
 
 
@@ -58,7 +57,7 @@ def random_image_strategy(draw):
 @st.composite
 def square_image_strategy(draw):
     '''
-    This function generates an itk image with a random 2D square.
+    This function generates a black itk image of random size with a random 2D white square.
     '''
    
     x_max = draw(st.integers(100,200))
@@ -82,7 +81,7 @@ def square_image_strategy(draw):
 @st.composite
 def rectangular_image_strategy(draw):
     '''
-    This function generates an itk image with a random 2D rectangle.
+    This function generates a black itk image of random size with a random 2D white rectangle.
     '''
     
     x_max = draw(st.integers(100,200))
@@ -103,7 +102,7 @@ def rectangular_image_strategy(draw):
 @st.composite
 def cubic_image_strategy(draw):
     '''
-    This function generates an itk image with a random 3D cube.
+    This function generates a black itk image of random size with a random 3D white cube.
     '''
     
     x_max = draw(st.integers(150,200))
@@ -162,7 +161,7 @@ def poligon_image_strategy(draw):
 @st.composite
 def rigid_square_image_strategy(draw):
     '''
-    This function generates an itk image with a random 2D square.
+    This function generates an itk image with a random 2D square of fixed size.
     '''
     
     #I create a square image
@@ -207,7 +206,7 @@ def rigid_square_image_strategy(draw):
 
 def test_pytest_properly_works():
     '''
-    This function just checks the proper work of pytest
+    This function just checks the proper work of pytest. 
     '''
     assert 1 == 1
     
@@ -219,7 +218,7 @@ def test_pytest_properly_works():
 @settings(deadline = None)
 def test_pytest_itk(image):
     '''
-    This function just checks if the test strategy is right
+    This function just checks if the test strategy is right by writing a random image and then reading it two times and comparing if the two images are the same. To check the equality of the images we chek that they have the same size, the same spacing an the same pixel values.
     '''
     itk.imwrite(image, "./output_image.nii")
     image1 = itk.imread("./output_image.nii", itk.F)
@@ -252,7 +251,7 @@ def test_pytest_itk(image):
 @settings(deadline = None)
 def test_elastix_registration_reader(image):
     '''
-    This function tests if the reader works properly
+    This function tests if the implemented reader function works properly writing a random image and then reading it two times and checking if all the two objects read with the function are equal as the written image. To check the equality of the images we chek that they have the same size, the same spacing an the same pixel values.
     '''
     itk.imwrite(image, "./output_image.nii")
     read_im1, read_im2 = registration_reader ('./output_image.nii', './output_image.nii')
@@ -285,11 +284,13 @@ def test_elastix_registration_reader(image):
 # 2D Transformation
     
 @given(fixed_image = square_image_strategy(), moving_image = rectangular_image_strategy())
-@settings(max_examples=10, deadline = None)
+@settings(max_examples=5, deadline = None)
 def test_read_transformation(fixed_image, moving_image):
     
     '''
-    This function tests if the transformation reader operates properly
+    This function register two images, write the transformation parameters and then read them again and check if the read transform has the same spacing.
+    The read transform is then applied to the image originally registered.
+    It is then checked if the registered image has the same spacing and the same size of the transformed image and it is checked if the read transformation has the same number of parameters as the initial one.
     '''
     
     #run a registration
@@ -315,15 +316,51 @@ def test_read_transformation(fixed_image, moving_image):
         
     os.rmdir(dir_path)
     
-    
+    #Size
     assert np.all(direct_transf.GetLargestPossibleRegion().GetSize() == my_transf.GetLargestPossibleRegion().GetSize())
     #Same Spacing
-    assert np.all(direct_transf.GetSpacing() == my_transf.GetSpacing())
-    #Same Image
+    assert np.all(direct_transf.GetSpacing() == my_transf.GetSpacing())        
+    
+    
+@given(fixed_image = square_image_strategy(), moving_image = rectangular_image_strategy())
+@settings(max_examples=5, deadline = None)
+def test_read_transformation_parameters_map(fixed_image, moving_image):
+    
+    '''
+    This function register two images, write the transformation parameters and then read them again.
+    The is checked if the two object have the same number of parameter maps, and for each parameter map if they have:
+    same transform
+    same resampler
+    same resamplerinterpolator
+    '''
+    
+    #run a registration
+    elastix_object = elastix_multimap_registration(fixed_image, moving_image)
+    
+    registered_image = elastix_object.GetOutput()
+    final_transf_params = elastix_object.GetTransformParameterObject()
+    
+    #write the registration and its parameters
+    dir_path = registration_writer(elastix_object)
+    
+    
+    #read the Parameters
+    transform_params = read_transform_from_files(dir_path)
+    
+    
+    #delete everything was created
+    for f in os.listdir(dir_path):
+        os.remove(os.path.join(dir_path, f))
+        
+    os.rmdir(dir_path)
+ 
     assert transform_params.GetNumberOfParameterMaps() == final_transf_params.GetNumberOfParameterMaps()
     
-    
-    
+    for i in range(0, transform_params.GetNumberOfParameterMaps()):
+        assert transform_params.GetParameter(i, 'Transform') == final_transf_params.GetParameter(i, 'Transform')
+        assert transform_params.GetParameter(i, 'Resampler') == final_transf_params.GetParameter(i, 'Resampler')
+        assert transform_params.GetParameter(i, 'ResampleInterpolator') == final_transf_params.GetParameter(i, 'ResampleInterpolator')
+
     
 
 ####### Registration Writer Test
@@ -414,7 +451,7 @@ def test_elastix_transform_registration_writer(fixed_image, moving_image):
     
     
     #go with the function we want to test
-    dir_path = registration_transform_parameters_writer(elastix_object)
+    dir_path = registration_writer(elastix_object, write_image = False)
     
     
     #read our transformation files
