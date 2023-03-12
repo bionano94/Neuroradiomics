@@ -215,7 +215,7 @@ def registration_writer(elastix_object, path = './', image_name = 'registered_im
             elastix_object.GetTransformParameterObject().WriteParameterFile(parameter_map, dir_path + "/TransformParameters.{0}.txt".format(index))
 
             
-    if write_transform:
+    if write_image:
         image = elastix_object.GetOutput()   
         itk.imwrite(image, dir_path + "/"+ image_name +".nii")
        
@@ -289,13 +289,11 @@ def apply_transform_from_files(image, transform_path):
     '''
     
     
-    num_of_transf_file = len(glob.glob1(transform_path,"TransformParameters.*"))
-    parameter_files = [transform_path + "/TransformParameters.{0}.txt".format(i) for i in range(num_of_transf_file)]
-    transform = itk.ParameterObject.New()
-    transform.ReadParameterFile(parameter_files)
+    #Read the parameter maps from the stored files
+    transform = read_transform_from_files(transform_path)
 
+    #Appy the transformation to the given image.
     result_image = itk.transformix_filter(image, transform)
-    
     
     return result_image
 
