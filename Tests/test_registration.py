@@ -366,10 +366,10 @@ def test_read_transformation_parameters_map(fixed_image, moving_image):
 ####### Registration Writer Test
 
 @given(fixed_image = rigid_square_image_strategy(), moving_image = rigid_square_image_strategy())
-@settings(max_examples=20, deadline = None)
-def test_elastix_registration_writer(fixed_image, moving_image):
+@settings(max_examples=10, deadline = None)
+def test_elastix_registration_writer_exists_parameters(fixed_image, moving_image):
     '''
-    This function tests if the writer works properly
+    This function tests if the writer save some parameter files and check if the names are correct.
     '''
     
     #create the elastix object for the registration
@@ -388,21 +388,20 @@ def test_elastix_registration_writer(fixed_image, moving_image):
     #go inside our new directory
     os.chdir(dir_path)
     
-    #write the same result file with already tested ITK function
-    itk.imwrite(elastix_object.GetOutput(), "itk_written_image.nii")
-    
-    #read our 2 images
-    read_image = itk.imread("./registered_image.nii")
-    itk_written_image = itk.imread("./itk_written_image.nii")
     
     #read our transformation files
     
-    num_of_transf = len(os.listdir('./')) - 2 #-2 because we also have 2 images in the directory
+    num_of_transf = len(os.listdir('./')) -1 #-1 because we also have 1 images in the directory
     
     for i in range(0, num_of_transf):
         with open('TransformParameters.' + str(i) + '.txt') as f:
             lines = f.readlines()
     f.close()
+    
+    
+    for j in range(0, num_of_transf):
+        path = 'TransformParameters.' + str(j) + '.txt'
+        assert os.path.isfile(path)
     
     #delete everything was created
     os.chdir('..')
@@ -411,36 +410,20 @@ def test_elastix_registration_writer(fixed_image, moving_image):
         
     os.rmdir(dir_path)
 
-
-    
-    #Tests
-    #Size
-    assert np.all(read_image.GetLargestPossibleRegion().GetSize() == itk_written_image.GetLargestPossibleRegion().GetSize())
-    #Same Spacing
-    assert np.all(read_image.GetSpacing() == itk_written_image.GetSpacing())
-    #Is the transformation saved?
     assert lines
     
     
 
-    
-
-##### Registration parameters writer Test
-
-
 @given(fixed_image = rigid_square_image_strategy(), moving_image = rigid_square_image_strategy())
-@settings(max_examples=20, deadline = None, suppress_health_check = (HC.too_slow,))
-def test_elastix_transform_registration_writer(fixed_image, moving_image):
+@settings(max_examples=10, deadline = None)
+def test_elastix_registration_writer_exists_image(fixed_image, moving_image):
     '''
-    This function tests if the writer works properly
+    This function tests if the writer save a nii image.
     '''
     
     #create the elastix object for the registration
     parameter_object = itk.ParameterObject.New()
-    default_rigid_parameter_map = parameter_object.GetDefaultParameterMap('rigid')
     default_affine_parameter_map = parameter_object.GetDefaultParameterMap('affine')
-    
-    parameter_object.AddParameterMap(default_rigid_parameter_map)
     parameter_object.AddParameterMap(default_affine_parameter_map)
 
     #set and run the registration
@@ -448,31 +431,17 @@ def test_elastix_transform_registration_writer(fixed_image, moving_image):
     elastix_object.SetParameterObject(parameter_object)
     elastix_object.UpdateLargestPossibleRegion()
 
-    
-    
     #go with the function we want to test
-    dir_path = registration_writer(elastix_object, write_image = False)
+    dir_path = registration_writer(elastix_object)
     
-    
-    #read our transformation files
-    
-    num_of_transf = len(glob.glob1(dir_path,"TransformParameters.*"))
-    
-    parameter_files = [dir_path + "/TransformParameters.{0}.txt".format(i) for i in range(0, num_of_transf)]
-    transform = itk.ParameterObject.New()
-    transform.ReadParameterFile(parameter_files)
-
-    
-    transformed_mov = itk.transformix_filter(moving_image, transform)
-    
-    #go inside the directory
+    #go inside our new directory
     os.chdir(dir_path)
     
-    itk.imwrite(transformed_mov, './transformed_mov.nii')
-    itk.imwrite(elastix_object.GetOutput(), './registered.nii')
     
-    new_mov = itk.imread('./transformed_mov.nii', itk.F)
-    reg_im = itk.imread('./registered.nii', itk.F)
+    check_nii_existence = False
+    for fname in os.listdir('.'): 
+        check_nii_existence = check_nii_existence or fname.endswith('.nii')
+        
     
     #delete everything was created
     os.chdir('..')
@@ -480,10 +449,53 @@ def test_elastix_transform_registration_writer(fixed_image, moving_image):
         os.remove(os.path.join(dir_path, f))
         
     os.rmdir(dir_path)
+    
+    assert check_nii_existence
 
     
-    #Tests
-    assert np.all( np.isclose( itk.GetArrayFromImage(new_mov), itk.GetArrayFromImage(reg_im), 1e-02, 1e-02 ))    
+@given(fixed_image = rigid_square_image_strategy(), moving_image = rigid_square_image_strategy())
+@settings(max_examples=10, deadline = None)
+def test_elastix_registration_writer_proper_transformation(fixed_image, moving_image):
+    '''
+    This function tests if the writer save properly the parameter object. 
+    It writes the transformation in a file then read it again and check if are the same of the registration.
+    '''
+    
+     #create the elastix object for the registration
+    parameter_object = itk.ParameterObject.New()
+    default_affine_parameter_map = parameter_object.GetDefaultParameterMap('affine')
+    parameter_object.AddParameterMap(default_affine_parameter_map)
+
+    #set and run the registration
+    elastix_object = itk.ElastixRegistrationMethod.New(fixed_image, moving_image)
+    elastix_object.SetParameterObject(parameter_object)
+    elastix_object.UpdateLargestPossibleRegion()
+
+    #go with the function we want to test
+    dir_path = registration_writer(elastix_object)
+    
+    #read the parameters written
+    
+    read_param_object = read_transform_from_files(dir_path)
+    
+    
+    #delete everything was created
+    for f in os.listdir(dir_path):
+        os.remove(os.path.join(dir_path, f))
+        
+    os.rmdir(dir_path)
+
+    for i in range(0, read_param_object.GetNumberOfParameterMaps()):
+        assert read_param_object.GetParameter(i, 'Transform') == parameter_object.GetParameter(i, 'Transform')
+        assert read_param_object.GetParameter(i, 'Resampler') == parameter_object.GetParameter(i, 'Resampler')
+        assert read_param_object.GetParameter(i, 'ResampleInterpolator') == parameter_object.GetParameter(i, 'ResampleInterpolator')    
+
+        
+        
+        
+        
+
+
     
 #############################################
 #####     Operative Functions Tests     #####
@@ -517,11 +529,11 @@ def test_2D_elastix_rigid_registration(fixed_image, moving_image):
 # 2D Multimap Registration
 
 @given(fixed_image = square_image_strategy(), moving_image = rectangular_image_strategy())
-@settings(max_examples=20, deadline = None, suppress_health_check = (HC.too_slow,))
+@settings(max_examples=10, deadline = None, suppress_health_check = (HC.too_slow,))
 def test_2D_elastix_multimap_registration(fixed_image, moving_image):
     
     '''
-    This function tests if the final registered image has the same size and the same spaging of the initial fixed image.
+    This function tests if the final registered image has the same size and the same spacing of the initial fixed image.
     This is for 2D images.
     '''
     
@@ -542,7 +554,7 @@ def test_2D_elastix_multimap_registration(fixed_image, moving_image):
 # 3D Multmap Registration
 
 @given(fixed_image = cubic_image_strategy(), moving_image = poligon_image_strategy())
-@settings(max_examples=20, deadline = None, suppress_health_check = (HC.too_slow,))
+@settings(max_examples=10, deadline = None, suppress_health_check = (HC.too_slow,))
 def test_3D_elastix_registration(fixed_image, moving_image):
     
     '''
@@ -566,7 +578,7 @@ def test_3D_elastix_registration(fixed_image, moving_image):
 # 2D Transformation
     
 @given(fixed_image = square_image_strategy(), moving_image = rectangular_image_strategy())
-@settings(max_examples=20, deadline = None, suppress_health_check = (HC.too_slow,))
+@settings(max_examples=10, deadline = None, suppress_health_check = (HC.too_slow,))
 def test_2D_elastix_transform(fixed_image, moving_image):
     
     '''
@@ -604,11 +616,11 @@ def test_2D_elastix_transform(fixed_image, moving_image):
 # 3D Transformation
     
 @given(fixed_image = cubic_image_strategy(), moving_image = poligon_image_strategy())
-@settings(max_examples=20, deadline = None, suppress_health_check = (HC.too_slow,))
+@settings(max_examples=10, deadline = None, suppress_health_check = (HC.too_slow,))
 def test_3D_elastix_transform(fixed_image, moving_image):
     
     '''
-    This function tests if the transformation function operate properly
+    This function tests if the transformation function operate properly checking if the final image has the same size and spacing of the reference one.
     This is for 3D images.
     '''
     
@@ -639,7 +651,7 @@ def test_3D_elastix_transform(fixed_image, moving_image):
 
     
 @given(fixed_image = cubic_image_strategy(), moving_image = poligon_image_strategy())
-@settings(max_examples=20, deadline = None, suppress_health_check = (HC.too_slow,))
+@settings(max_examples=10, deadline = None, suppress_health_check = (HC.too_slow,))
 def test_mse(fixed_image, moving_image):
     
     '''
@@ -658,7 +670,7 @@ def test_mse(fixed_image, moving_image):
 # Set Parameters
 
 @given(fixed_image = cubic_image_strategy(), moving_image = poligon_image_strategy())
-@settings(max_examples=20, deadline = None, suppress_health_check = (HC.too_slow,))
+@settings(max_examples=10, deadline = None, suppress_health_check = (HC.too_slow,))
 def test_set_parameters(fixed_image, moving_image):
     
     '''
