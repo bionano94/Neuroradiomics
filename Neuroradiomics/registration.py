@@ -354,7 +354,7 @@ def Set_sampler_parameters_as_image(params_object, image):
     size = np.array(image.GetLargestPossibleRegion().GetSize())
     spacing = np.array(image.GetSpacing())
     
-    for index in range(params_file.GetNumberOfParameterMaps()):
+    for index in range(params_object.GetNumberOfParameterMaps()):
         params_object.SetParameter(index, "Size", size.astype(str))
         params_object.SetParameter(index, "Spacing", spacing.astype(str))
     
@@ -389,7 +389,7 @@ def Set_parameters_map_attribute(params_object, attribute, value):
     
     """
     
-    for index in range(params_file.GetNumberOfParameterMaps()):
+    for index in range(params_object.GetNumberOfParameterMaps()):
         params_object.SetParameter(index, attribute, value)
     
     
