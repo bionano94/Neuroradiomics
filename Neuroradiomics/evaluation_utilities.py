@@ -60,14 +60,8 @@ def evaluate_mask(mask, ground_mask):
     hausdorff_filter.SetInput2(c_ground_mask)
     hausdorff_filter.Update()
     
-    #print the results
-    print ('Dice_Coefficient =', overlapping_filter.GetDiceCoefficient() )
-    print ('Volume_Similarity =', overlapping_filter.GetVolumeSimilarity() )
-    print ('Hausdorff_Distance =', hausdorff_filter.GetHausdorffDistance () )
-    print ('Average_Hausdorff_Distance =', hausdorff_filter.GetAverageHausdorffDistance () )
-    
     #create a vetor with all the measures
-    results = [overlapping_filter.GetDiceCoefficient(), overlapping_filter.GetVolumeSimilarity(), hausdorff_filter.GetHausdorffDistance (), hausdorff_filter.GetAverageHausdorffDistance ()]
+    results = (overlapping_filter.GetDiceCoefficient(), overlapping_filter.GetVolumeSimilarity(), hausdorff_filter.GetHausdorffDistance (), hausdorff_filter.GetAverageHausdorffDistance ())
     
     return results
 
@@ -78,22 +72,22 @@ def evaluate_mask(mask, ground_mask):
 # REGISTRATION EVALUATION
 def evaluate_registration_mse(fixed_image, deformed_image, ax = None):
     """
-    This function find the MSE between the 2 images. It's useful to evaluate the registration
+    This function find the MSE between the 2 images. It's useful to evaluate the registration.
     
     Parameters
     ----------
     
     fixed_image : itk image object
-        The fixed image of your registration
+        The fixed image of your registration.
         
     
     deformed_image : itk image object
-        The result of your registration
+        The result of your registration.
         
         
     ax : boolean or int
         The axis you want to compute the mean of the squares on: 0 on columns, 1 on rows.
-        Default is None: the mean of the flattered array
+        Default is None: the mean of the flattered array.
         
         
     Returns
