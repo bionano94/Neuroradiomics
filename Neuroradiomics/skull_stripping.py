@@ -42,12 +42,10 @@ def negative_3d_masking (image, mask):
     
     index = itk.Index[Dimension]()
     
+    #This is necessary to prevent problems with ITK python wrapping issues. This way the function should work with every type of 3D images.
     for index[0] in range( mask.GetLargestPossibleRegion().GetSize()[0] ):
-    
         for index[1] in range( mask.GetLargestPossibleRegion().GetSize()[1] ):
-        
             for index[2] in range( mask.GetLargestPossibleRegion().GetSize()[2] ):
-            
                 if mask.GetPixel(index) < 1e-01:
                     masked_image.SetPixel(index, 0)
                 else: 
@@ -86,15 +84,12 @@ def masking (image, mask):
     masked_image.SetDirection( image.GetDirection() )
     masked_image.Allocate()
     
-    
     index = itk.Index[Dimension]()
     
+    #This is necessary to prevent problems with ITK python wrapping issues. This way the function should work with every type of 3D images.
     for index[0] in range( mask.GetLargestPossibleRegion().GetSize()[0] ):
-    
         for index[1] in range( mask.GetLargestPossibleRegion().GetSize()[1] ):
-        
-            for index[2] in range( mask.GetLargestPossibleRegion().GetSize()[2] ):
-            
+            for index[2] in range( mask.GetLargestPossibleRegion().GetSize()[2] ): 
                 if mask.GetPixel(index) > 0.5:
                     masked_image.SetPixel(index, 0)
                 else: 
@@ -473,7 +468,6 @@ def skull_stripping_mask (image, atlas, mask, transformation_return = False):
     #apply a dilation to the mask and a hole filler
     final_mask = hole_filler( binary_dilating(first_mask, 2) )
     
-    print('Your brain mask is ready!')
     
     if transformation_return == False:
         return final_mask
@@ -504,7 +498,6 @@ def skull_stripper (image, atlas, mask):
     '''
     
     brain = negative_3d_masking( image, skull_stripping_mask( image, atlas, mask ) )
-    print('The brain is extracted!')
     
     return brain
     
