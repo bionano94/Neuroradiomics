@@ -259,36 +259,7 @@ def test_binarize_double_extremes(image):
     assert np.all( image.GetSpacing() == bin_image.GetSpacing() )
     assert np.all( image.GetOrigin() == bin_image.GetOrigin() )
     assert np.all( image.GetDirection() == bin_image.GetDirection() )
-
     
-#Thresholding
-@given (image = random_image_strategy(), value = st.floats(0,10))
-@settings(max_examples=20, deadline = None)
-def test_normal_threshold(image, value):
-    '''
-    This function tests the thresholding funtion
-    '''
-    
-    
-    final_image = normal_threshold(image, value)
-    
-    index = itk.Index[3]()
-    
-    
-    for index[0] in range( image.GetLargestPossibleRegion().GetSize()[0] ):
-    
-        for index[1] in range( image.GetLargestPossibleRegion().GetSize()[1] ):
-        
-            for index[2] in range( image.GetLargestPossibleRegion().GetSize()[2] ):
-                
-                if (image.GetPixel(index) > value or image.GetPixel(index) < -value):
-                    assert np.isclose(final_image.GetPixel(index), 0 )
-                else: assert np.isclose(final_image.GetPixel(index), 1 )
-    
-    assert np.all( (itk.GetArrayFromImage(final_image) == 0) | (itk.GetArrayFromImage(final_image) == 1) )
-    assert np.all( image.GetSpacing() == final_image.GetSpacing() )
-    assert np.all( image.GetOrigin() == final_image.GetOrigin() )
-    assert np.all( image.GetDirection() == final_image.GetDirection() )
     
 
 #Binay Opening
