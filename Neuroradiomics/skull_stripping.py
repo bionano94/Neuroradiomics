@@ -116,40 +116,45 @@ def binarize ( image, low_value = 0.1, hi_value = None ):
         low_value: float value
             The low value for the thresholding
             
-        hi_value: float value
-            The upper value for the thresholding
+        hi_value: float value. Default = None
+            If given is the upper value for the thresholding.
             
     Return
     ------
         final_image: itk Image object
-            The binarized image.
+            The binarized thresholded image.
     '''
     
-    #controllo che il tipo dell'immagine sia quello corretto per il funzionamento del filtro
+    #Check the image type. It must be itk.F for the thresholding filter.
     OutputType = itk.Image[itk.F, 3]
     
     if type(image) != OutputType:
         
-        #eseguo il cast per essere sicuro che la funzione venga applicata
+        #cast to the pixel value supported by itk python wrapping
         cast_filter = itk.CastImageFilter[type(image), OutputType].New()
         cast_filter.SetInput(image)
         cast_filter.Update()
         c_image = cast_filter.GetOutput()
     
-        #applico la thresholding
-        thresholdFilter = itk.BinaryThresholdImageFilter[OutputType, OutputType].New()
-        thresholdFilter.SetInput(c_image)
-        thresholdFilter.SetLowerThreshold(low_value)
+    else: c_image = image
+    
+    #Thresholding the image
+    thresholdFilter = itk.BinaryThresholdImageFilter[OutputType, OutputType].New()
+    thresholdFilter.SetInput(c_image)
+    thresholdFilter.SetLowerThreshold(low_value)
+
+    #If an hi_value is given then it is set to that value
+    if hi_value != None : 
+        thresholdFilter.SetUpperThreshold(hi_value)
+
+    thresholdFilter.SetOutsideValue(0)
+    thresholdFilter.SetInsideValue(1)
+    thresholdFilter.Update()
+    
+    
+    if type(image) != OutputType:
         
-        if hi_value != None : 
-            thresholdFilter.SetUpperThreshold(hi_value)
-            
-        thresholdFilter.SetOutsideValue(0)
-        thresholdFilter.SetInsideValue(1)
-        thresholdFilter.Update()
-    
-    
-        #eseguo il cast per restituire l'immagine dello stesso tipo dell'input
+        #if the image was casted then it is casted again to return on the same type of the input image.
         cast_filter = itk.CastImageFilter[OutputType, type(image)].New()
         cast_filter.SetInput( thresholdFilter.GetOutput() )
         cast_filter.Update()
@@ -157,17 +162,6 @@ def binarize ( image, low_value = 0.1, hi_value = None ):
         final_image = cast_filter.GetOutput()
         
     else:
-        thresholdFilter = itk.BinaryThresholdImageFilter[OutputType, OutputType].New()
-        thresholdFilter.SetInput(image)
-        thresholdFilter.SetLowerThreshold(low_value)
-        
-        if hi_value != None : 
-            thresholdFilter.SetUpperThreshold(hi_value)
-            
-        thresholdFilter.SetOutsideValue(0)
-        thresholdFilter.SetInsideValue(1)
-        thresholdFilter.Update()
-        
         final_image = thresholdFilter.GetOutput()
     
     return final_image 
