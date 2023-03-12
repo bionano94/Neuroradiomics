@@ -173,41 +173,6 @@ def binarize ( image, low_value = 0.1, hi_value = None ):
     return final_image 
 
 
-def normal_threshold ( image, value ):
-    '''
-    This function apply a threshold to a normalized image thresholding everything in between plus and minus the value.
-    
-    Parameters
-    ----------
-        image: itk image object
-            The image you want to threshold
-            
-        value: float number
-            The value of the extremes you want your foreground to be in. It must be positive!
-            
-    Returns
-    -------
-    
-        final_image: itk object
-            The result of the thresholding
-    '''
-    
-    thresholdFilter = itk.BinaryThresholdImageFilter[type(image), type(image)].New()
-    thresholdFilter.SetInput(image)
-    thresholdFilter.SetLowerThreshold(-value)
-    thresholdFilter.SetUpperThreshold(value)
-    thresholdFilter.SetOutsideValue(0)
-    thresholdFilter.SetInsideValue(1)
-    thresholdFilter.Update()
-    
-    final_image = thresholdFilter.GetOutput()
-    
-    return final_image
-
-
-
-
-
 #########################
 # Specialized Functions #
 #########################
