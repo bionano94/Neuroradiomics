@@ -92,9 +92,7 @@ def elastix_rigid_registration(fixed_image, moving_image, clog_value = False):
     
     
     elastix_object.UpdateLargestPossibleRegion()
-    
-    print("The Rigid Registration is done!")
-    
+        
     return elastix_object
 
 ################################
@@ -165,7 +163,6 @@ def elastix_multimap_registration(fixed_image, moving_image, clog_value = False)
     
     elastix_object.UpdateLargestPossibleRegion()
     
-    print("The Multimap Registration is done!")
     
     return elastix_object
 
@@ -216,10 +213,7 @@ def registration_writer(elastix_object, path = './', image_name = 'registered_im
     image = elastix_object.GetOutput()
         
     itk.imwrite(image, dir_path + "/"+ image_name +".nii")
-    
-    
-    print("All your files are written")
-   
+       
     
     return dir_path
 
@@ -263,8 +257,6 @@ def registration_transform_parameters_writer(elastix_object, path ='./'):
         parameter_map = elastix_object.GetTransformParameterObject().GetParameterMap(index)
         elastix_object.GetTransformParameterObject().WriteParameterFile(parameter_map, dir_path + "/TransformParameters.{0}.txt".format(index))
         
-        print("Your Transform Files are written")
-
     
     return dir_path
 
@@ -307,8 +299,6 @@ def transform_parameters_writer(params_obj, path ='./' ):
         parameter_map = params_obj.GetParameterMap(index)
         params_obj.WriteParameterFile(parameter_map, dir_path + "/TransformParameters.{0}.txt".format(index))
         
-    print("Your Transform Files are written")
-
     
     return dir_path
     
@@ -343,7 +333,6 @@ def apply_transform_from_files(image, transform_path):
 
     result_image = itk.transformix_filter(image, transform)
     
-    print("The Transformation is done!")
     
     return result_image
 
