@@ -366,14 +366,14 @@ def read_transform_from_files(transform_path):
 
 
 #CHANGE THE SIZE AND THE SPACING OF A TRASFORM
-def Set_sampler_parameters_as_image(params_file, image):
+def Set_sampler_parameters_as_image(params_object, image):
     """
     This function sets the Size and the Spacing saved in a parameters file as the ones of an other image.
     
     Parameters
     ----------
     
-    params_file : elastix parameter object
+    params_object : elastix parameter object
         The parameters file you want to change
         
     image : itk image object
@@ -394,22 +394,22 @@ def Set_sampler_parameters_as_image(params_file, image):
     spacing = np.array(image.GetSpacing())
     
     for index in range(params_file.GetNumberOfParameterMaps()):
-        params_file.SetParameter(index, "Size", size.astype(str))
-        params_file.SetParameter(index, "Spacing", spacing.astype(str))
+        params_object.SetParameter(index, "Size", size.astype(str))
+        params_object.SetParameter(index, "Spacing", spacing.astype(str))
     
     
-    return params_file
+    return params_object
 
 
 #CHANGE AN ATTRIBUTE VALUE OF A TRASFORM
-def Set_parameters_map_attribute(params_file, attribute, value):
+def Set_parameters_map_attribute(params_object, attribute, value):
     """
     This function sets an attribute of a parameters file as you want.
     
     Parameters
     ----------
     
-    params_file : elastix parameter object
+    params_object : elastix parameter object
         The parameters file you want to change
         
     attribute : string object
@@ -423,17 +423,14 @@ def Set_parameters_map_attribute(params_file, attribute, value):
     Returns
     -------
     
-    params_file : elastix parameter object
+    params_object : elastix parameter object
         The parameters file changed
     
     """
     
-    
-   
-    
     for index in range(params_file.GetNumberOfParameterMaps()):
-        params_file.SetParameter(index, attribute, value)
+        params_object.SetParameter(index, attribute, value)
     
     
-    return params_file
+    return params_object
 
