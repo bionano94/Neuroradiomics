@@ -29,10 +29,10 @@ def indexing (image, mask):
     
     Return
     ------
-        image_array: 1D list of int
+        image_list: 1D list of int
             The array of the image.
         
-        index_array: 1D list of itk.Index
+        index_list: 1D list of itk.Index
             The array with the ITK indexes of the pixel masked. This is useful to rebuild the image.
     '''
     
@@ -42,10 +42,11 @@ def indexing (image, mask):
     index = itk.Index[Dimension]()
     
     
-    image_array = [] #The array with the grey values of the masked pixels
-    index_array = [] #The array with the itk indexes of the pixels
+    image_list = [] #The array with the grey values of the masked pixels
+    index_list = [] #The array with the itk indexes of the pixels
     
     
+    #This part permits to store in a list only the pixels covered by a defined mask
     for index[0] in range( image.GetLargestPossibleRegion().GetSize()[0] ):
     
         for index[1] in range( image.GetLargestPossibleRegion().GetSize()[1] ):
@@ -54,10 +55,10 @@ def indexing (image, mask):
             
             #Only if the pixel is under the mask then the function will take that pixel
                 if mask.GetPixel(index) != 0:
-                    image_array.append( image.GetPixel(index) )
-                    index_array.append( [ index[0], index[1], index[2] ] )
+                    image_list.append( image.GetPixel(index) )
+                    index_list.append( [ index[0], index[1], index[2] ] )
                 
-    return image_array, index_array
+    return image_list, index_list
 
 
 
@@ -107,7 +108,7 @@ def label_de_indexing (image_array, index_array, reference_image, first_label_va
     image.Allocate()
     
     
-    #create a black image
+    #create a black image. This is necessary to get around issues with types for itk python wrapping
     for index[0] in range( image.GetLargestPossibleRegion().GetSize()[0] ):
     
         for index[1] in range( image.GetLargestPossibleRegion().GetSize()[1] ):
