@@ -80,7 +80,6 @@ def elastix_rigid_registration(fixed_image, moving_image, clog_value = False):
     parameter_map_rigid = parameter_object.GetDefaultParameterMap('rigid', resolutions)
     parameter_map_rigid['Metric']       = ['AdvancedMattesMutualInformation']
     parameter_map_rigid['Interpolator'] = ['BSplineInterpolatorFloat']
-  #  parameter_map_rigid['ShowExactMetricValue'] = ['false', 'false', 'false', 'true']
     
     parameter_object.AddParameterMap(parameter_map_rigid)
     
@@ -149,8 +148,6 @@ def elastix_multimap_registration(fixed_image, moving_image, clog_value = False)
     #Adding a NON-RIGID parameter map
     parameter_map_bspline = parameter_object.GetDefaultParameterMap("bspline", resolutions)
     parameter_map_bspline['Interpolator'] = ['BSplineInterpolatorFloat']
-    # parameter_map_bspline['WriteIterationInfo'] = ['true']
-
     
     
     parameter_object.AddParameterMap(parameter_map_bspline)
@@ -170,7 +167,7 @@ def elastix_multimap_registration(fixed_image, moving_image, clog_value = False)
 #####
 #IMAGE WRITER
 
-def registration_writer(elastix_object, path = './', image_name = 'registered_image'):
+def registration_writer(elastix_object, path = './', image_name = 'registered_image', write_image = True, write_transform = True):
     
     """This creates a directory and save in it an itk image as a nifti image and the txt file(s) with the final_transformation_parameters.
         
@@ -181,12 +178,18 @@ def registration_writer(elastix_object, path = './', image_name = 'registered_im
                 The final elastix object with the registration image and the final transformation parameters in it.
             
         file_path : string
-                Path where will be the directory in which the image will be saved. Default is "./"
+                Path where will be the directory in which the image will be saved. Default is "./".
                 
                 
         image_name : string
-                The name of the registered file without the extension. Default is "registered_image"
+                The name of the registered file without the extension. Default is "registered_image".
+                
+        
+        write_image: boolean object. Default = True.
+                If it is set to True the function will write the image stored in the elastix_object given.
          
+        write_transform: boolean object. Default = True.
+                If it is set to True the function will write the transformation parameters stored in the elastix_object given.
          
          
         Returns
@@ -205,58 +208,17 @@ def registration_writer(elastix_object, path = './', image_name = 'registered_im
     if not os.path.exists(dir_path):
         os.mkdir(dir_path)
         
-            
-    for index in range(elastix_object.GetTransformParameterObject().GetNumberOfParameterMaps()):
-        parameter_map = elastix_object.GetTransformParameterObject().GetParameterMap(index)
-        elastix_object.GetTransformParameterObject().WriteParameterFile(parameter_map, dir_path + "/TransformParameters.{0}.txt".format(index))
     
-    image = elastix_object.GetOutput()
-        
-    itk.imwrite(image, dir_path + "/"+ image_name +".nii")
+    if write_transform:
+        for index in range(elastix_object.GetTransformParameterObject().GetNumberOfParameterMaps()):
+            parameter_map = elastix_object.GetTransformParameterObject().GetParameterMap(index)
+            elastix_object.GetTransformParameterObject().WriteParameterFile(parameter_map, dir_path + "/TransformParameters.{0}.txt".format(index))
+
+            
+    if write_transform:
+        image = elastix_object.GetOutput()   
+        itk.imwrite(image, dir_path + "/"+ image_name +".nii")
        
-    
-    return dir_path
-
-
-
-
-def registration_transform_parameters_writer(elastix_object, path ='./'):
-    
-    """This creates a directory and save in it the txt file(s) with the final_transformation_parameters.
-        
-        Parameters
-        ----------
-        
-        elstix_object : elastix object
-                The final elastix object with the registration image and the final transformation parameters in it.
-            
-        file_path : string
-                Path where will be the directory in which the image will be saved. Default is "./"
-         
-         
-         
-        Returns
-        -------
-        
-            dir_path : string
-                Path of the created directory
-    """
-    
-    #find the actual date and time
-    now = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
-    #name of the directory
-    dir_name = 'Registration_'+now
-    
-    dir_path = path + "/"  + dir_name
-    
-    if not os.path.exists(dir_path):
-        os.mkdir(dir_path)
-        
-    
-    for index in range(elastix_object.GetTransformParameterObject().GetNumberOfParameterMaps()):
-        parameter_map = elastix_object.GetTransformParameterObject().GetParameterMap(index)
-        elastix_object.GetTransformParameterObject().WriteParameterFile(parameter_map, dir_path + "/TransformParameters.{0}.txt".format(index))
-        
     
     return dir_path
 
@@ -264,7 +226,8 @@ def registration_transform_parameters_writer(elastix_object, path ='./'):
 
 def transform_parameters_writer(params_obj, path ='./' ):
     
-    """This creates a directory and save in it the txt file(s) of the parameter object.
+    """This function creates a directory and save in it the txt file(s) of the parameter object.
+       Differently from the 'registration_writer' function this is to be used with the parameter object, not the elastix object!
         
         Parameters
         ----------
@@ -384,7 +347,7 @@ def Set_sampler_parameters_as_image(params_object, image):
     Returns
     -------
     
-    params_file : elastix parameter object
+    params_object : elastix parameter object
         The parameters file changed
     
     """
