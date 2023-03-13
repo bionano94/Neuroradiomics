@@ -220,7 +220,7 @@ def test_negative_masking_validation(image):
     
 #masking function
 
-@given  mask = masking_cube_mask_strategy())
+@given(mask = masking_cube_mask_strategy())
 @settings(max_examples=10, deadline = None)
 def test_masking_attributes(mask):
     '''
@@ -240,7 +240,7 @@ def test_masking_attributes(mask):
     
     
 
-@given  mask = masking_cube_mask_strategy())
+@given(mask = masking_cube_mask_strategy())
 @settings(max_examples=10, deadline = None)
 def test_masking_bg(mask):
     '''
@@ -261,6 +261,24 @@ def test_masking_bg(mask):
 
     
 
+    
+
+#Test the masking with a full ones mask
+@given (image = cube_random_image_strategy())
+@settings(max_examples = 5, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
+def test_masking_validation(image):
+    '''
+    This function tests if masking an image with a total white mask the output image is totally black.
+    '''
+    
+    mask = binary_uniform_cube_image()
+    masked_image = masking(image, mask)
+
+    
+    assert np.all(np.isclose(masked_image, 0.))
+    
+    
+    
 #Binarize low
 @given (image = random_image_strategy())
 @settings(max_examples=20, deadline = None)
