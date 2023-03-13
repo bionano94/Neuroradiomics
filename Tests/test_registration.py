@@ -14,6 +14,7 @@ from Neuroradiomics.registration import apply_transform_from_files
 from Neuroradiomics.registration import read_transform_from_files
 from Neuroradiomics.registration import elastix_rigid_registration
 from Neuroradiomics.registration import Set_sampler_parameters_as_image
+from Neuroradiomics.registration import Set_parameters_map_attribute
 from Neuroradiomics.registration import transform_parameters_writer
 from Neuroradiomics.evaluation_utilities import evaluate_registration_mse
 from Neuroradiomics.evaluation_utilities import evaluate_mask
@@ -754,7 +755,7 @@ def test_evaluation_mask():
     
 
     
-# Set Parameters
+# Set Parameters as image
 
 @given(fixed_image = cubic_image_strategy(), moving_image = poligon_image_strategy())
 @settings(max_examples=10, deadline = None, suppress_health_check = (HC.too_slow,))
@@ -777,3 +778,28 @@ def test_set_parameters_as_image(fixed_image, moving_image):
     assert np.all(transformed_image.GetLargestPossibleRegion().GetSize() == moving_image.GetLargestPossibleRegion().GetSize())
     assert np.all(transformed_image.GetSpacing() == moving_image.GetSpacing())
     
+
+    
+# Set Parameters manually
+def test_set_parameters_map_attribute():
+    
+    '''
+    This function tests if the Set_parameters_map_attribute function works properly.
+    It registers a moving image on a fixed image and then change two params on the parameter maps of the registration
+    Finally it checks if the params where changed properly.
+    '''
+    
+    fixed_image= black_image_one_white_point(1,2,3)
+    moving_image= black_image_one_white_point(1,2,2)
+
+  
+    elastix_object = elastix_multimap_registration(fixed_image, moving_image)
+    params = elastix_object.GetTransformParameterObject()
+    
+    new_params = Set_parameters_map_attribute(params, 'Transform', 'Affine')
+    new_params2 = Set_parameters_map_attribute(params, 'ResampleInterpolator', 'BSplineResamplerInterpolator')
+    
+    
+    for i in range(0, params.GetNumberOfParameterMaps()):
+        assert new_params.GetParameter(i, 'Transform') == ('Affine',)
+        assert new_params2.GetParameter(i, 'ResampleInterpolator') == ('BSplineResamplerInterpolator',)
