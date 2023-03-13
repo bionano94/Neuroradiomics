@@ -184,6 +184,42 @@ def rigid_square_image_strategy(draw):
                 
                 
     
+    
+    
+#########################################
+######## NOT STRATEGY FUNCTIONS #########
+#########################################
+
+def black_image_one_white_point(x, y, z):
+    '''
+    This function create a black cubic image with only one white point.
+    
+    Paramters
+    ---------
+        x: int number
+            first coordinate of the white point
+        
+        y: int number
+            second cordinate of the white point
+        
+        z: int number
+            third cordinate of the white point
+            
+    Returns
+    -------
+        image: itk Image object
+            The image created.
+    '''
+    x_max = 10
+    y_max = 10
+    z_max = 10
+    image_array = np.zeros([x_max, y_max, z_max], np.float32)
+    
+    image_array[x,y,z] = 1
+                
+    image = itk.image_view_from_array(image_array)
+    
+    return image
 
 
 # ████████ ███████ ███████ ████████ ███████ 
@@ -661,7 +697,8 @@ def test_3D_elastix_transform(fixed_image, moving_image):
 def test_mse(fixed_image, moving_image):
     
     '''
-    This function tests if the evaluation function works properly
+    This function tests if the evaluation function works properly. 
+    It simply checks if that if two images are the same the mse is 0 and that if two images are different if the mse is > 0.
     '''
     
     elastix_object = elastix_multimap_registration(fixed_image, moving_image)
@@ -672,6 +709,20 @@ def test_mse(fixed_image, moving_image):
     
     
     
+
+def test_mse_2():
+    
+    '''
+    This function tests if the evaluation function works properly. 
+    It creates two black images, each one with one white point, and check if the mse is equal to the one manually calculated.
+    '''
+    
+    
+    image1 = black_image_one_white_point(9,8,7)
+    image2 = black_image_one_white_point(1,2,3)
+    
+    expected_value = 2 / 1000
+    assert np.isclose( evaluate_registration_mse(image1, image2), float( expected_value ) )
     
 # Set Parameters
 
