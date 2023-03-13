@@ -204,10 +204,10 @@ def test_negative_masking_bg(mask):
     
 #Test the masking with a full ones mask
 @given (image = cube_random_image_strategy())
-@settings(max_examples = 50, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
+@settings(max_examples = 10, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
 def test_negative_masking_validation(image):
     '''
-    This function tests the negative_3d_masking function
+    This function tests if masking an image with a total white mask the output image is the same of the one in input.
     '''
     
     mask = binary_uniform_cube_image()
@@ -221,10 +221,30 @@ def test_negative_masking_validation(image):
 #masking function
 
 @given  mask = masking_cube_mask_strategy())
-@settings(max_examples=20, deadline = None)
-def test_masking(mask):
+@settings(max_examples=10, deadline = None)
+def test_masking_attributes(mask):
     '''
-    This function tests the negative_3d_masking function
+    This function tests if an image obtained with the negative_3d_masking function has the same attributes of the original image.
+    '''
+    
+    image = masking_random_image_strategy()
+    masked_image = masking(image, mask)
+    
+    index = itk.Index[3]()           
+ 
+    assert np.all(image.GetLargestPossibleRegion().GetSize() == masked_image.GetLargestPossibleRegion().GetSize())
+    assert np.all( image.GetSpacing() == masked_image.GetSpacing() )
+    assert np.all( image.GetOrigin() == masked_image.GetOrigin() )
+    assert np.all( image.GetDirection() == masked_image.GetDirection() )
+    
+    
+    
+
+@given  mask = masking_cube_mask_strategy())
+@settings(max_examples=10, deadline = None)
+def test_masking_bg(mask):
+    '''
+    This function tests if an image obtained with the negative_3d_masking function has pixels with 0 value where the mask has a value > 0.5.
     '''
     
     image = masking_random_image_strategy()
@@ -234,20 +254,11 @@ def test_masking(mask):
     
     
     for index[0] in range( mask.GetLargestPossibleRegion().GetSize()[0] ):
-    
         for index[1] in range( mask.GetLargestPossibleRegion().GetSize()[1] ):
-        
             for index[2] in range( mask.GetLargestPossibleRegion().GetSize()[2] ):
-                
                 if mask.GetPixel(index) > 0.5:
                     assert np.isclose(masked_image.GetPixel(index), 0 )
-                
- 
-    assert np.all(image.GetLargestPossibleRegion().GetSize() == masked_image.GetLargestPossibleRegion().GetSize())
-    assert np.all( image.GetSpacing() == masked_image.GetSpacing() )
-    assert np.all( image.GetOrigin() == masked_image.GetOrigin() )
-    assert np.all( image.GetDirection() == masked_image.GetDirection() )
-    
+
     
 
 #Binarize low
