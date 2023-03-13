@@ -196,6 +196,24 @@ def binary_uniform_cube():
     return image
 
     
+def binarym_cube_with_bg():
+    '''
+    This function create a 3D black image with a white cube in it.
+    '''
+    x_max = 200
+    y_max = 200
+    z_max = 200
+    image = np.zeros([x_max, y_max, z_max], np.short)
+    
+    for x in range (25,175):
+        for y in range (25,175):
+            for z in range (25,175):
+                image[x,y,z] = 1
+              
+    image = itk.image_view_from_array(image)
+    
+    return image
+
 
 def masks_generator():
     '''
@@ -334,7 +352,7 @@ def test_index_de_index_validation (image):
     assert np.all( np.isclose( itk.GetArrayFromImage(de_indexed_image), itk.GetArrayFromImage(image), 1e-03, 1e-03))
     
     
-    
+
     
 ###################
 # Means Functions #
@@ -397,6 +415,23 @@ def test_gaussian_prameters_std_random (image2, mask):
     
     assert params2[1] >= 0
     
+    
+
+def test_find_means_bg():
+    '''
+    This function tests the find_means function. It uses 3 generated non overlapping masks and find the mean value for the pixels covered by each mask.
+    The input image is a black image with a cube with pixel values = 1 in it.
+    Since the same image is used also as a mask for the background the means have however to be = 1.
+    '''
+    mask1, mask2, mask3 = masks_generator()
+    image = binarym_cube_with_bg()
+    means = find_means(image, image, mask1, mask2, mask3)
+    
+    assert means[0] == 1
+    assert means[1] == 1
+    assert means[2] == 1
+
+
 #####################
 # Weights Functions #
 #####################
