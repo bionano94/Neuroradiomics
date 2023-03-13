@@ -722,6 +722,7 @@ def test_mse_2():
     image1 = black_image_one_white_point(9,8,7)
     image2 = black_image_one_white_point(1,2,3)
     
+    #2 is the total distance since we have 2 pixels of 1 GL in different places. 1000 is the total number of pixel per image.
     expected_value = 2 / 1000
     assert np.isclose( evaluate_registration_mse(image1, image2), float( expected_value ) )
     
@@ -757,10 +758,12 @@ def test_evaluation_mask():
 
 @given(fixed_image = cubic_image_strategy(), moving_image = poligon_image_strategy())
 @settings(max_examples=10, deadline = None, suppress_health_check = (HC.too_slow,))
-def test_set_parameters(fixed_image, moving_image):
+def test_set_parameters_as_image(fixed_image, moving_image):
     
     '''
-    This function tests if the Set Parameters function works properly
+    This function tests if the Set_sampler_parameters_as_image function works properly.
+    It registers a moving image on a fixed image and then change the transform spacing and size as the original moving_image.
+    Finally it transform again the original moving_image and check if the parameters are correct.
     '''
   
     elastix_object = elastix_multimap_registration(fixed_image, moving_image)
