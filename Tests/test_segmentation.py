@@ -432,10 +432,11 @@ def test_find_means_bg():
     assert means[2] == 1
 
 
+    
+    
 #####################
 # Weights Functions #
 #####################
-
 
 #3 classes weights function    
 @given (mask1 = probability_mask_strategy(), mask2 = probability_mask_strategy(), mask3 = probability_mask_strategy() )
@@ -530,8 +531,26 @@ def test_4_weights_function_sum (mask1, mask2, mask3):
 
 #Testing the label_selection function
 @given (labels = label_image_strategy(), value = st.integers( 0, 2 ) ) 
-@settings(max_examples=20, deadline = None, suppress_health_check = (HC.too_slow,))
-def test_label_selection (labels, value):
+@settings(max_examples=10, deadline = None, suppress_health_check = (HC.too_slow,))
+def test_label_selection_binary (labels, value):
+    '''
+    This function checks if the image output from label_selection function is binary
+    '''
+    
+    selected_label = label_selection(labels, value)
+    
+    selected_label_array = itk.GetArrayFromImage(selected_label)
+        
+    assert np.all( np.logical_or( selected_label_array == 0, selected_label_array == 1) )
+
+
+    #Testing the label_selection function
+@given (labels = label_image_strategy(), value = st.integers( 0, 2 ) ) 
+@settings(max_examples=10, deadline = None, suppress_health_check = (HC.too_slow,))
+def test_label_selection_value (labels, value):
+    '''
+    This function checks if the label selection function returns 1 where the original image with all the labels has the chosen value. 
+    '''
     
     selected_label = label_selection(labels, value)
     
@@ -540,6 +559,4 @@ def test_label_selection (labels, value):
     
     check_boolean_vector = np.where(labels_array == value, selected_label_array == 1, selected_label_array == 0)
     
-    assert np.all( np.logical_or( selected_label_array == 0, selected_label_array == 1) )
     assert np.all(check_boolean_vector)
-
