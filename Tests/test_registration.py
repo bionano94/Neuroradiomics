@@ -741,18 +741,33 @@ def test_evaluation_mask():
     image2 = black_image_one_white_point(1,2,2)
     
     expected_dice = 0
-    expected_volume_similarity = 0
     expected_hausdorf = 1
     expected_avg_hausdorf = 1
     
     evaluation = evaluate_mask(image1, image2)
     assert np.isclose( evaluation[0], expected_dice )
-    assert np.isclose( evaluation[1], expected_volume_similarity )
-    assert np.isclose( evaluation[2], expected_hausdorf )
-    assert np.isclose( evaluation[3], expected_avg_hausdorf )
+    assert np.isclose( evaluation[1], expected_hausdorf )
+    assert np.isclose( evaluation[2], expected_avg_hausdorf )
 
+
+@given(image = cubic_image_strategy())
+@settings(max_examples=5, deadline = None, suppress_health_check = (HC.too_slow,))
+def test_evaluation_mask_2(image):
+    
+    '''
+    This function tests if the evaluation mask function works properly. 
+    It compares an image with itself and checks if the outputs are the expected ones.
+    '''
     
     
+    expected_dice = 1
+    expected_hausdorf = 0
+    expected_avg_hausdorf = 0
+    
+    evaluation = evaluate_mask(image, image)
+    assert np.isclose( evaluation[0], expected_dice )
+    assert np.isclose( evaluation[1], expected_hausdorf )
+    assert np.isclose( evaluation[2], expected_avg_hausdorf )
 
     
 # Set Parameters as image
