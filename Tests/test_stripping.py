@@ -279,20 +279,47 @@ def test_masking_validation(image):
     
     
     
+    
 #Binarize low
 @given (image = random_image_strategy())
-@settings(max_examples=20, deadline = None)
-def test_binarize(image):
+@settings(max_examples=10, deadline = None)
+def test_binarize_attributes(image):
     '''
-    This function tests the binarize funtion
+    This function tests if the output of the binary function has the same attributes of the input image
+    '''
+    
+    bin_image = binarize(image)
+    
+    assert np.all( image.GetSpacing() == bin_image.GetSpacing() )
+    assert np.all( image.GetOrigin() == bin_image.GetOrigin() )
+    assert np.all( image.GetDirection() == bin_image.GetDirection() )
+    
+    
+#Binarize low
+@given (image = random_image_strategy())
+@settings(max_examples=10, deadline = None)
+def test_binarize_binary(image):
+    '''
+    This function tests if the output of the binary image is really binary
     '''
     
     bin_image = binarize(image)
     
     assert np.all( (itk.GetArrayFromImage(bin_image) == 0) | (itk.GetArrayFromImage(bin_image) == 1) )
-    assert np.all( image.GetSpacing() == bin_image.GetSpacing() )
-    assert np.all( image.GetOrigin() == bin_image.GetOrigin() )
-    assert np.all( image.GetDirection() == bin_image.GetDirection() )
+
+
+    
+
+def test_binarize_full_white():
+    '''
+    This function tests if giving in input an image with every pixel =1 the output is the same image as the input.
+    '''
+    image = binary_uniform_cube_image()
+    bin_image = binarize(image)
+    
+    assert np.all( itk.GetArrayFromImage(bin_image) == itk.GetArrayFromImage(image) )
+    
+    
     
     
 #Binarize hi
