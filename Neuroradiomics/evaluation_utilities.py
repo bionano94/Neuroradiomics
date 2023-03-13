@@ -28,9 +28,8 @@ def evaluate_mask(mask, ground_mask):
         results: tuple
             A tuple with the results of the measurements:
              1 = Dice Coefficient
-             2 = Volume Similarity
-             3 = Hausdorff Distance
-             4 = Average Hausdorf Distance
+             2 = Hausdorff Distance
+             3 = Average Hausdorf Distance
     '''
     
     # Matching the physical space
@@ -61,7 +60,7 @@ def evaluate_mask(mask, ground_mask):
     hausdorff_filter.Update()
     
     #create a vetor with all the measures
-    results = (overlapping_filter.GetDiceCoefficient(), overlapping_filter.GetVolumeSimilarity(), hausdorff_filter.GetHausdorffDistance (), hausdorff_filter.GetAverageHausdorffDistance ())
+    results = (overlapping_filter.GetDiceCoefficient(), hausdorff_filter.GetHausdorffDistance (), hausdorff_filter.GetAverageHausdorffDistance ())
     
     return results
 
