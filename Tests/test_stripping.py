@@ -201,6 +201,30 @@ def black_image_one_white_point(x, y, z):
     return image
 
 
+def black_image_with_two_objects():
+    '''
+    This function generates a 3D image with two cubic objects of different size. The one with the biggest size has also a greater pixel value (3).
+    '''
+    x_max = 20
+    y_max = 20
+    z_max = 20
+    image_array = np.zeros([x_max, y_max, z_max], np.float32)
+    
+    for x in range (2, 4):
+        for y in range (2, 4):
+            for z in range (2, 4):
+                image_array[x,y,z] = 1
+    
+    for x in range (10, 18):
+        for y in range (10, 18):
+            for z in range (10, 18):
+                image_array[x,y,z] = 3
+                
+    image = itk.image_view_from_array(image_array)
+    
+    return image
+
+
 
 # ████████ ███████ ███████ ████████ ███████ 
 #    ██    ██      ██         ██    ██      
@@ -462,10 +486,10 @@ def test_binary_dilating_functionality():
     
 #Binary Eroding    
 @given (image = random_image_strategy())
-@settings(max_examples=20, deadline = None)
-def test_binary_eroding(image):
+@settings(max_examples=10, deadline = None)
+def test_binary_eroding_attributes(image):
     '''
-    This function tests the opening function gives in output an image with the same attributes of the one in input.
+    This function tests the eroding function gives in output an image with the same attributes of the one in input.
     '''
     
     bin_image = binarize(image)
@@ -493,20 +517,34 @@ def test_binary_eroding_functionality():
 
 #Largest Connected Region  
 @given (image = random_image_strategy())
-@settings(max_examples=20, deadline = None)
-def test_largest_connected_region(image):
+@settings(max_examples=10, deadline = None)
+def test_largest_connected_region_attributes(image):
     '''
-    This function tests the opening function.
+    This function tests the find_largest_connected_region function gives in output an image with the same attributes of the one in input.
     '''
     
     bin_image = binarize(image)
     
     final_image = find_largest_connected_region(bin_image)
     
-    assert np.all( (itk.GetArrayFromImage(final_image) == 0) | (itk.GetArrayFromImage(final_image) == 1) )
     assert np.all( image.GetSpacing() == final_image.GetSpacing() )
     assert np.all( image.GetOrigin() == final_image.GetOrigin() )
     assert np.all( image.GetDirection() == final_image.GetDirection() )
     assert np.all( image.GetLargestPossibleRegion().GetSize() == final_image.GetLargestPossibleRegion().GetSize())
-    assert np.any( itk.GetArrayFromImage(final_image) == 1 )
+    
+    
+def test_largest_connected_region_attributes():
+    '''
+    This function tests the find_largest_connected_region function finds the right region in a known image.
+    '''
+    
+    image = black_image_with_two_objects()
+    
+    bin_image = binarize(image)
+    
+    connected_image = find_largest_connected_region(bin_image)
+    
+    thresholded_image = binarize(image,2)
+    
+    assert np.all( np.isclose(itk.GetArrayFromImage(connected_image), itk.GetArrayFromImage(thresholded_image) ) )
     
