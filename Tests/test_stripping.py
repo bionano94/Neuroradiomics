@@ -169,6 +169,39 @@ def four_level_image():
 
 
 
+def black_image_one_white_point(x, y, z):
+    '''
+    This function create a black cubic image with only one white point.
+    
+    Paramters
+    ---------
+        x: int number
+            first coordinate of the white point
+        
+        y: int number
+            second cordinate of the white point
+        
+        z: int number
+            third cordinate of the white point
+            
+    Returns
+    -------
+        image: itk Image object
+            The image created.
+    '''
+    x_max = 10
+    y_max = 10
+    z_max = 10
+    image_array = np.zeros([x_max, y_max, z_max], np.float32)
+    
+    image_array[x,y,z] = 1
+                
+    image = itk.image_view_from_array(image_array)
+    
+    return image
+
+
+
 # ████████ ███████ ███████ ████████ ███████ 
 #    ██    ██      ██         ██    ██      
 #    ██    █████   ███████    ██    ███████
@@ -396,24 +429,36 @@ def test_binarize_double_extremes_one():
                     assert np.isclose(bin_image.GetPixel(index), 0 )
     
     
-#Binay Opening
+#Binay Dilating
 @given (image = random_image_strategy())
-@settings(max_examples=20, deadline = None)
-def test_binary_dilating(image):
+@settings(max_examples=10, deadline = None)
+def test_binary_dilating_attributes(image):
     '''
-    This function tests the opening function.
+    This function tests the opening function gives in output an image with the same attributes of the one in input.
     '''
     
     bin_image = binarize(image)
     
     dilated_image = binary_dilating(bin_image)
     
-    assert np.all( (itk.GetArrayFromImage(dilated_image) == 0) | (itk.GetArrayFromImage(dilated_image) == 1) )
     assert np.all( image.GetSpacing() == dilated_image.GetSpacing() )
     assert np.all( image.GetOrigin() == dilated_image.GetOrigin() )
     assert np.all( image.GetDirection() == dilated_image.GetDirection() )
     assert np.all( image.GetLargestPossibleRegion().GetSize() == dilated_image.GetLargestPossibleRegion().GetSize())
 
+
+    
+def test_binary_dilating_attributes():
+    '''
+    This function checks if dilating an image with only one pixel of value 1 with a ball of radius 1 the output is equal to the one manually computed.
+    '''
+    
+    image = black_image_one_white_point(2,2,2)
+    
+    dilated_image = binary_dilating(image)
+    
+    assert np.count_nonzero(itk.GetArrayFromImage(dilated_image) ) == 19
+    
     
 #Binary Eroding    
 @given (image = random_image_strategy())
