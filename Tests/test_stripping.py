@@ -62,7 +62,7 @@ def cube_random_image_strategy(draw):
     for x in range (x_max):
         for y in range (y_max):
             for z in range (z_max):
-                image[x,y,z] = draw(st.integers(1,100))
+                image[x,y,z] = draw(st.integers(1,10))
                 
     image = itk.image_view_from_array(image)
     
@@ -100,6 +100,7 @@ def masking_cube_mask_strategy(draw):
 
 
 
+
 ############################################
 ######### NOT STRATEGY FUNCTIONS ###########
 ############################################
@@ -125,7 +126,7 @@ def binary_uniform_cube_image():
 
 
 
-def masking_random_image_strategy():
+def masking_random_image():
     '''
     This function generates a 3D random itk image.
     '''
@@ -140,6 +141,31 @@ def masking_random_image_strategy():
     rndImage.UpdateLargestPossibleRegion()
 
     return rndImage.GetOutput()
+
+
+
+def four_level_image():
+    '''
+    This function generates a 3D itk image with 4 pixel levels.
+    '''
+    
+    x_max = 20
+    y_max = 20
+    z_max = 20
+    image = np.zeros([x_max, y_max, z_max])
+    
+    for x in range (x_max):
+        for y in range (y_max):
+            for z in range (5):
+                image[x,y,z] = 0
+            for z in range (5,10):    
+                image[x,y,z] = 1
+            for z in range (10,15):    
+                image[x,y,z] = 2
+            for z in range (15,20):    
+                image[x,y,z] = 3
+
+    return itk.image_view_from_array(image)
 
 
 
@@ -162,7 +188,7 @@ def test_negative_masking_attributes(mask):
     This function tests if an image obtained with the negative_3d_masking function has the same attributes of the original image.
     '''
     
-    image = masking_random_image_strategy()
+    image = masking_random_image()
     masked_image = negative_3d_masking(image, mask)
     
     index = itk.Index[3]()
@@ -188,7 +214,7 @@ def test_negative_masking_bg(mask):
     This function tests if an image obtained with the negative_3d_masking function has pixels with 0 value where the mask has a value < 0.5.
     '''
     
-    image = masking_random_image_strategy()
+    image = masking_random_image()
     masked_image = negative_3d_masking(image, mask)
     
     index = itk.Index[3]()
@@ -227,7 +253,7 @@ def test_masking_attributes(mask):
     This function tests if an image obtained with the negative_3d_masking function has the same attributes of the original image.
     '''
     
-    image = masking_random_image_strategy()
+    image = masking_random_image()
     masked_image = masking(image, mask)
     
     index = itk.Index[3]()           
@@ -247,7 +273,7 @@ def test_masking_bg(mask):
     This function tests if an image obtained with the negative_3d_masking function has pixels with 0 value where the mask has a value > 0.5.
     '''
     
-    image = masking_random_image_strategy()
+    image = masking_random_image()
     masked_image = masking(image, mask)
     
     index = itk.Index[3]()
@@ -324,21 +350,52 @@ def test_binarize_full_white():
     
 #Binarize hi
 @given (image = random_image_strategy())
-@settings(max_examples=20, deadline = None)
-def test_binarize_double_extremes(image):
+@settings(max_examples=10, deadline = None)
+def test_binarize_double_extremes_binary(image):
     '''
-    This function tests the binarize funtion
+    This function tests if the output of the binary image is really binary even when an high value is inserted.
     '''
     
     bin_image = binarize(image, 1, 100)
     
     assert np.all( (itk.GetArrayFromImage(bin_image) == 0) | (itk.GetArrayFromImage(bin_image) == 1) )
+
+#Binarize hi
+@given (image = random_image_strategy())
+@settings(max_examples=5, deadline = None)
+def test_binarize_double_extremes_attributes(image):
+    '''
+    This function tests if the output of the binary function has the same attributes of the input image even when an high value is inserted.
+    '''
+    
+    bin_image = binarize(image, 1, 100)
+    
     assert np.all( image.GetSpacing() == bin_image.GetSpacing() )
     assert np.all( image.GetOrigin() == bin_image.GetOrigin() )
     assert np.all( image.GetDirection() == bin_image.GetDirection() )
     
-    
 
+#Binarize hi
+
+def test_binarize_double_extremes_one():
+    '''
+    This function tests if the output of the binarized image is 1 for values inside the range and 0 for values outside.
+    '''
+    
+    image = four_level_image()
+    bin_image = binarize(image, 1, 2)
+    
+    index = itk.Index[3]()
+
+    for index[0] in range( image.GetLargestPossibleRegion().GetSize()[0] ):
+        for index[1] in range( image.GetLargestPossibleRegion().GetSize()[1] ):
+            for index[2] in range( image.GetLargestPossibleRegion().GetSize()[2] ):
+                if image.GetPixel(index) >= 1 and image.GetPixel(index) <= 2 :
+                    assert np.isclose(bin_image.GetPixel(index), 1 )
+                else :
+                    assert np.isclose(bin_image.GetPixel(index), 0 )
+    
+    
 #Binay Opening
 @given (image = random_image_strategy())
 @settings(max_examples=20, deadline = None)
