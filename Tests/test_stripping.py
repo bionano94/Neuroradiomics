@@ -448,7 +448,7 @@ def test_binary_dilating_attributes(image):
 
 
     
-def test_binary_dilating_attributes():
+def test_binary_dilating_functionality():
     '''
     This function checks if dilating an image with only one pixel of value 1 with a ball of radius 1 the output is equal to the one manually computed.
     '''
@@ -465,18 +465,29 @@ def test_binary_dilating_attributes():
 @settings(max_examples=20, deadline = None)
 def test_binary_eroding(image):
     '''
-    This function tests the opening function.
+    This function tests the opening function gives in output an image with the same attributes of the one in input.
     '''
     
     bin_image = binarize(image)
     
-    eroded_image = binary_eroding(bin_image)
+    dilated_image = binary_eroding(bin_image)
     
-    assert np.all( (itk.GetArrayFromImage(eroded_image) == 0) | (itk.GetArrayFromImage(eroded_image) == 1) )
-    assert np.all( image.GetSpacing() == eroded_image.GetSpacing() )
-    assert np.all( image.GetOrigin() == eroded_image.GetOrigin() )
-    assert np.all( image.GetDirection() == eroded_image.GetDirection() )
-    assert np.all( image.GetLargestPossibleRegion().GetSize() == eroded_image.GetLargestPossibleRegion().GetSize())
+    assert np.all( image.GetSpacing() == dilated_image.GetSpacing() )
+    assert np.all( image.GetOrigin() == dilated_image.GetOrigin() )
+    assert np.all( image.GetDirection() == dilated_image.GetDirection() )
+    assert np.all( image.GetLargestPossibleRegion().GetSize() == dilated_image.GetLargestPossibleRegion().GetSize())
+    
+
+def test_binary_eroding_functionality():
+    '''
+    This function checks if eroding an image with only one pixel of value 1 with a ball of radius 1 the output is equal to the one manually computed.
+    '''
+    
+    image = black_image_one_white_point(2,2,2)
+    
+    dilated_image = binary_eroding(image)
+    
+    assert np.count_nonzero(itk.GetArrayFromImage(dilated_image) ) == 0
     
     
 
