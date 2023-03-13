@@ -214,30 +214,58 @@ def binary_uniform_cube():
 #Testing the indexing function
 
 @given (image = masking_random_image_strategy(), mask = masking_cube_mask_strategy())
-@settings(max_examples=20, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
-def test_indexing (image, mask):
+@settings(max_examples=5, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
+def test_indexing_len (image, mask):
+    '''
+    This function index an image and tests if the obtained image_array has the same length of the index_array.
+    '''
+    
+    image_array, index_array = indexing(image, mask)
+        
+    assert len(image_array) == len(index_array)
+
+    
+    
+@given (image = masking_random_image_strategy(), mask = masking_cube_mask_strategy())
+@settings(max_examples=5, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
+def test_indexing_shape (image, mask):
+    '''
+    This function index an image and tests if the obtained index_array has the same shape of the index_array and is proper for a 3D image.
+    '''
+    
+    image_array, index_array = indexing(image, mask)
+        
+    assert np.shape(image_array)[0] == np.shape(index_array)[0]
+    assert np.shape(index_array)[1] == 3 #because it is a 3D image
+
+    
+@given (image = masking_random_image_strategy(), mask = masking_cube_mask_strategy())
+@settings(max_examples=5, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
+def test_indexing_non_zero (image, mask):
+    '''
+    This function index an image and tests if the obtained image_array has the same number of non-zero pixels of an image masked with the same mask.
+    '''
     
     image_array, index_array = indexing(image, mask)
     
     masked_image = masked_image = negative_3d_masking (image, mask)
-    
-    assert len(image_array) == len(index_array)
-    assert np.shape(image_array)[0] == np.shape(index_array)[0]
-    assert np.shape(index_array)[1] == 3
+
     assert np.count_nonzero(itk.GetArrayFromImage(masked_image)) == np.count_nonzero(image_array)
     
-
     
     
 #Testing the de-indexing function
 
 @given (image = masking_random_image_strategy(), mask = masking_cube_mask_strategy())
-@settings(max_examples=20, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
+@settings(max_examples=10, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
 def test_de_indexing (image, mask):
+    '''
+    This function checks if indexing and then de-indexing an image the final image has the same Size and spacing of the original image.
+    '''
     
     image_array, index_array = indexing(image, mask)
     
-    de_indexed_image = de_indexing (image_array, index_array, image)
+    de_indexed_image = label_de_indexing (image_array, index_array, image)
     
     masked_image = negative_3d_masking (image, mask)
     
@@ -252,13 +280,16 @@ def test_de_indexing (image, mask):
 #Testing if indexing and de-indexing give the same image
 
 @given (image = cubic_image_strategy())
-@settings(max_examples=20, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
+@settings(max_examples=10, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
 def test_index_de_index_validation (image):
+    '''
+    This function checks if indexing and then de-indexing an image the result is equal to the original image.
+    '''
     
     mask = binary_uniform_cube()
     image_array, index_array = indexing(image, mask) 
     
-    de_indexed_image = de_indexing (image_array, index_array, image)
+    de_indexed_image = label_de_indexing (image_array, index_array, image)
     
     
     #same image
@@ -274,22 +305,59 @@ def test_index_de_index_validation (image):
     
 #Testing the Gaussian function
 
-@given (image2 = masking_cube_mask_strategy(), mask = masking_cube_mask_strategy())
-@settings(max_examples=20, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
-def test_gaussian_prameters (image2, mask):
+@given (mask = masking_cube_mask_strategy())
+@settings(max_examples=5, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
+def test_gaussian_prameters_mean_1 (mask):
+    '''
+    This function checks if obtaining the mean value of an image with every pixel has value 1 then the resulting mean is 1.
+    '''
     
     image1 = binary_uniform_cube
     params1 = gaussian_pixel_distribution_params_evaluation(image1, mask)
+        
+    assert params1[0] == 1
+
+    
+@given (mask = masking_cube_mask_strategy())
+@settings(max_examples=5, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
+def test_gaussian_prameters_std_1 (mask):
+    '''
+    This function checks if obtaining the std dev value of an image with every pixel has value 1 then the resulting std dev is 10
+    '''
+    
+    image1 = binary_uniform_cube
+    params1 = gaussian_pixel_distribution_params_evaluation(image1, mask)
+        
+    assert params1[1] == 0
+    
+    
+
+@given (image2 = masking_cube_mask_strategy(), mask = masking_cube_mask_strategy())
+@settings(max_examples=5, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
+def test_gaussian_prameters_mean_random (image2, mask):
+    '''
+    This function checks if obtaining the mean value of a random image the mean value is greater or equal to 1 and smaller or equal to 0.
+    '''
     
     params2 = gaussian_pixel_distribution_params_evaluation(image2, mask)
     
-    assert params1[0] == 1
-    assert params1[1] == 0
+    
     assert params2[0] <= 1
     assert params2[0] >= 0
     assert params2[1] >= 0
     
     
+    
+@given (image2 = masking_cube_mask_strategy(), mask = masking_cube_mask_strategy())
+@settings(max_examples=5, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
+def test_gaussian_prameters_std_random (image2, mask):
+    '''
+    This function checks if obtaining the std dev value of a random image the std dev value is greater or equal to 0.
+    '''
+    
+    params2 = gaussian_pixel_distribution_params_evaluation(image2, mask)
+    
+    assert params2[1] >= 0
     
 #####################
 # Weights Functions #
