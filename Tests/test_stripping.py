@@ -68,46 +68,7 @@ def cube_random_image_strategy(draw):
     
     return image
 
-@st.composite
-def binary_uniform_cube_image_strategy(draw):
-    '''
-    This function generates an itk image with a 3D cube full of ones. It has to be used as a mask.
-    '''
-    
-    x_max = 20
-    y_max = 20
-    z_max = 20
-    image = np.zeros([x_max, y_max, z_max])
-    
-    for x in range (x_max):
-        for y in range (y_max):
-            for z in range (z_max):
-                image[x,y,z] = 1
-                
-    image = itk.image_view_from_array(image)
-    
-    return image
 
-
-
-
-@st.composite
-def masking_random_image_strategy(draw):
-    
-    '''
-    This function generates a 3D random itk image.
-    '''
-    
-    PixelType = itk.F
-    ImageType = itk.Image[PixelType, 3]
-    Size = (200, 200, 200)
-
-    rndImage = itk.RandomImageSource[ImageType].New()
-    rndImage.SetSize(Size)
-    rndImage.SetNumberOfWorkUnits(1)
-    rndImage.UpdateLargestPossibleRegion()
-
-    return rndImage.GetOutput()
 
 @st.composite
 def masking_cube_mask_strategy(draw):
@@ -139,6 +100,48 @@ def masking_cube_mask_strategy(draw):
 
 
 
+############################################
+######### NOT STRATEGY FUNCTIONS ###########
+############################################
+
+def binary_uniform_cube_image():
+    '''
+    This function generates an itk image with a 3D cube full of ones. It has to be used as a mask.
+    '''
+    
+    x_max = 20
+    y_max = 20
+    z_max = 20
+    image = np.zeros([x_max, y_max, z_max])
+    
+    for x in range (x_max):
+        for y in range (y_max):
+            for z in range (z_max):
+                image[x,y,z] = 1
+                
+    image = itk.image_view_from_array(image)
+    
+    return image
+
+
+
+def masking_random_image_strategy():
+    '''
+    This function generates a 3D random itk image.
+    '''
+    
+    PixelType = itk.F
+    ImageType = itk.Image[PixelType, 3]
+    Size = (200, 200, 200)
+
+    rndImage = itk.RandomImageSource[ImageType].New()
+    rndImage.SetSize(Size)
+    rndImage.SetNumberOfWorkUnits(1)
+    rndImage.UpdateLargestPossibleRegion()
+
+    return rndImage.GetOutput()
+
+
 
 # ████████ ███████ ███████ ████████ ███████ 
 #    ██    ██      ██         ██    ██      
@@ -152,13 +155,14 @@ def masking_cube_mask_strategy(draw):
 
 #negative masking function
 
-@given (image = masking_random_image_strategy(), mask = masking_cube_mask_strategy())
+@given (mask = masking_cube_mask_strategy())
 @settings(max_examples=20, deadline = None)
-def test_negative_masking(image, mask):
+def test_negative_masking(mask):
     '''
     This function tests the negative_3d_masking function
     '''
     
+    image = masking_random_image_strategy()
     masked_image = negative_3d_masking(image, mask)
     
     index = itk.Index[3]()
@@ -184,13 +188,14 @@ def test_negative_masking(image, mask):
 
     
 #Test the masking with a full ones mask
-@given (image = cube_random_image_strategy(), mask = binary_uniform_cube_image_strategy())
+@given (image = cube_random_image_strategy())
 @settings(max_examples = 50, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
-def test_negative_masking_validation(image, mask):
+def test_negative_masking_validation(image):
     '''
     This function tests the negative_3d_masking function
     '''
     
+    mask = binary_uniform_cube_image()
     masked_image = negative_3d_masking(image, mask)
 
     
@@ -200,13 +205,14 @@ def test_negative_masking_validation(image, mask):
     
 #masking function
 
-@given (image = masking_random_image_strategy(), mask = masking_cube_mask_strategy())
+@given  mask = masking_cube_mask_strategy())
 @settings(max_examples=20, deadline = None)
-def test_masking(image, mask):
+def test_masking(mask):
     '''
     This function tests the negative_3d_masking function
     '''
     
+    image = masking_random_image_strategy()
     masked_image = masking(image, mask)
     
     index = itk.Index[3]()
