@@ -156,10 +156,10 @@ def masking_random_image_strategy():
 #negative masking function
 
 @given (mask = masking_cube_mask_strategy())
-@settings(max_examples=20, deadline = None)
-def test_negative_masking(mask):
+@settings(max_examples = 10, deadline = None)
+def test_negative_masking_attributes(mask):
     '''
-    This function tests the negative_3d_masking function
+    This function tests if an image obtained with the negative_3d_masking function has the same attributes of the original image.
     '''
     
     image = masking_random_image_strategy()
@@ -169,11 +169,8 @@ def test_negative_masking(mask):
     
     
     for index[0] in range( mask.GetLargestPossibleRegion().GetSize()[0] ):
-    
         for index[1] in range( mask.GetLargestPossibleRegion().GetSize()[1] ):
-        
-            for index[2] in range( mask.GetLargestPossibleRegion().GetSize()[2] ):
-                
+            for index[2] in range( mask.GetLargestPossibleRegion().GetSize()[2] ):  
                 if mask.GetPixel(index) < 0.5:
                     assert np.isclose(masked_image.GetPixel(index), 0 )
                 
@@ -184,6 +181,24 @@ def test_negative_masking(mask):
     assert np.all( image.GetDirection() == masked_image.GetDirection() )
     
     
+@given (mask = masking_cube_mask_strategy())
+@settings(max_examples = 10, deadline = None)
+def test_negative_masking_bg(mask):
+    '''
+    This function tests if an image obtained with the negative_3d_masking function has pixels with 0 value where the mask has a value < 0.5.
+    '''
+    
+    image = masking_random_image_strategy()
+    masked_image = negative_3d_masking(image, mask)
+    
+    index = itk.Index[3]()
+    
+    
+    for index[0] in range( mask.GetLargestPossibleRegion().GetSize()[0] ):
+        for index[1] in range( mask.GetLargestPossibleRegion().GetSize()[1] ):
+            for index[2] in range( mask.GetLargestPossibleRegion().GetSize()[2] ):  
+                if mask.GetPixel(index) < 0.5:
+                    assert np.isclose(masked_image.GetPixel(index), 0 )
     
 
     
