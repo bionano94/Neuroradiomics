@@ -370,6 +370,7 @@ def test_read_transformation_parameters_map(fixed_image, moving_image):
 def test_elastix_registration_writer_exists_parameters(fixed_image, moving_image):
     '''
     This function tests if the writer save some parameter files and check if the names are correct.
+    This is done registering an image and then writing the parameter files down and then checking their existence.
     '''
     
     #create the elastix object for the registration
@@ -419,6 +420,7 @@ def test_elastix_registration_writer_exists_parameters(fixed_image, moving_image
 def test_elastix_registration_writer_exists_image(fixed_image, moving_image):
     '''
     This function tests if the writer save a nii image.
+    This is done registering an image and then writing the image file and then checking its existence.
     '''
     
     #create the elastix object for the registration
@@ -490,12 +492,8 @@ def test_elastix_registration_writer_proper_transformation(fixed_image, moving_i
         assert read_param_object.GetParameter(i, 'Resampler') == parameter_object.GetParameter(i, 'Resampler')
         assert read_param_object.GetParameter(i, 'ResampleInterpolator') == parameter_object.GetParameter(i, 'ResampleInterpolator')    
 
-        
-        
-        
-        
 
-
+        
     
 #############################################
 #####     Operative Functions Tests     #####
@@ -508,7 +506,7 @@ def test_elastix_registration_writer_proper_transformation(fixed_image, moving_i
 def test_2D_elastix_rigid_registration(fixed_image, moving_image):
     
     '''
-    This function tests if the final registered image has the same size and the same spaging of the initial fixed image.
+    This function tests if the final registered image has the same size and the same spacing of the initial fixed image.
     This is for 2D images.
     '''
     
@@ -558,7 +556,7 @@ def test_2D_elastix_multimap_registration(fixed_image, moving_image):
 def test_3D_elastix_registration(fixed_image, moving_image):
     
     '''
-    This function tests if the final registered image has the same size and the same spaging of the initial fixed image.
+    This function tests if the final registered image has the same size and the same spacing of the initial fixed image.
     This is for 3D images.
     '''
   
@@ -582,7 +580,9 @@ def test_3D_elastix_registration(fixed_image, moving_image):
 def test_2D_elastix_transform(fixed_image, moving_image):
     
     '''
-    This function tests if the transformation function operate properly
+    This function tests if the transformation function operate properly.
+    It registers two images and then apply the obtained transformation parameters on the original moving image.
+    The it checks if the image registered and the one transformed are the same image.
     This is for 2D images.
     '''
     
@@ -609,7 +609,9 @@ def test_2D_elastix_transform(fixed_image, moving_image):
     assert np.all(transformed_image.GetLargestPossibleRegion().GetSize() == registered_image.GetLargestPossibleRegion().GetSize())
     #Same Spacing
     assert np.all(transformed_image.GetSpacing() == registered_image.GetSpacing())
-    
+    #Same image
+    assert np.all( np.isclose( itk.GetArrayFromImage(transformed_image), itk.GetArrayFromImage(registered_image), 0.01, 0.01) )
+
     
     
     
@@ -620,7 +622,9 @@ def test_2D_elastix_transform(fixed_image, moving_image):
 def test_3D_elastix_transform(fixed_image, moving_image):
     
     '''
-    This function tests if the transformation function operate properly checking if the final image has the same size and spacing of the reference one.
+    This function tests if the transformation function operate properly.
+    It registers two images and then apply the obtained transformation parameters on the original moving image.
+    The it checks if the image registered and the one transformed are the same image.
     This is for 3D images.
     '''
     
@@ -647,6 +651,8 @@ def test_3D_elastix_transform(fixed_image, moving_image):
     assert np.all(transformed_image.GetLargestPossibleRegion().GetSize() == registered_image.GetLargestPossibleRegion().GetSize())
     #Same Spacing
     assert np.all(transformed_image.GetSpacing() == registered_image.GetSpacing())
+    #Same image
+    assert np.all( np.isclose( itk.GetArrayFromImage(transformed_image), itk.GetArrayFromImage(registered_image), 0.01, 0.01) )
     
 
     
