@@ -16,6 +16,7 @@ from Neuroradiomics.registration import elastix_rigid_registration
 from Neuroradiomics.registration import Set_sampler_parameters_as_image
 from Neuroradiomics.registration import transform_parameters_writer
 from Neuroradiomics.evaluation_utilities import evaluate_registration_mse
+from Neuroradiomics.evaluation_utilities import evaluate_mask
 
 
 
@@ -697,7 +698,7 @@ def test_3D_elastix_transform(fixed_image, moving_image):
 def test_mse(fixed_image, moving_image):
     
     '''
-    This function tests if the evaluation function works properly. 
+    This function tests if the evaluation mse function works properly. 
     It simply checks if that if two images are the same the mse is 0 and that if two images are different if the mse is > 0.
     '''
     
@@ -713,7 +714,7 @@ def test_mse(fixed_image, moving_image):
 def test_mse_2():
     
     '''
-    This function tests if the evaluation function works properly. 
+    This function tests if the evaluation mse function works properly. 
     It creates two black images, each one with one white point, and check if the mse is equal to the one manually calculated.
     '''
     
@@ -723,6 +724,34 @@ def test_mse_2():
     
     expected_value = 2 / 1000
     assert np.isclose( evaluate_registration_mse(image1, image2), float( expected_value ) )
+    
+
+    
+def test_evaluation_mask():
+    
+    '''
+    This function tests if the evaluation mask function works properly. 
+    It creates two black images, each one with one white point, and check if the computed metrics are equal to the one manually calculated.
+    '''
+    
+    
+    image1 = black_image_one_white_point(1,2,3)
+    image2 = black_image_one_white_point(1,2,2)
+    
+    expected_dice = 0
+    expected_volume_similarity = 0
+    expected_hausdorf = 1
+    expected_avg_hausdorf = 1
+    
+    evaluation = evaluate_mask(image1, image2)
+    assert np.isclose( evaluation[0], expected_dice )
+    assert np.isclose( evaluation[1], expected_volume_similarity )
+    assert np.isclose( evaluation[2], expected_hausdorf )
+    assert np.isclose( evaluation[3], expected_avg_hausdorf )
+
+    
+    
+
     
 # Set Parameters
 
