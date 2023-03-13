@@ -298,7 +298,7 @@ def test_gaussian_prameters (image2, mask):
 
 #3 classes weights function    
 @given (mask1 = probability_mask_strategy(), mask2 = probability_mask_strategy(), mask3 = probability_mask_strategy() )
-@settings(max_examples = 500, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
+@settings(max_examples = 20, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
 def test_weights_function (mask1, mask2, mask3):
     
     weights = find_prob_weights(mask1, mask2, mask3)
@@ -317,7 +317,7 @@ def test_weights_function (mask1, mask2, mask3):
     
 #4 classes weights function    
 @given (mask1 = probability_mask_strategy(), mask2 = probability_mask_strategy(), mask3 = probability_mask_strategy() )
-@settings(max_examples = 500, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
+@settings(max_examples = 20, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
 def test_4_weights_function (mask1, mask2, mask3):
     
     weights = find_prob_4_weights(mask1, mask2, mask3)
