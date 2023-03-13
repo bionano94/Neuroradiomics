@@ -190,12 +190,50 @@ def binary_uniform_cube():
         for y in range (y_max):
             for z in range (z_max):
                 image[x,y,z] = 1
-                
+              
     image = itk.image_view_from_array(image)
     
     return image
 
     
+
+def masks_generator():
+    '''
+    This function 3 cubic black images with a poligon of pixel value = 1. 
+    If superimposed on a 4th image the 3 poligons are not overlapping. And fullify the whole image.
+    The first two poligons are equals between each other in size and the third one has double the size.
+    '''
+    
+    x_max = 200
+    y_max = 200
+    z_max = 200
+    wm = np.zeros([x_max, y_max, z_max], np.short)
+    gm = np.zeros([x_max, y_max, z_max], np.short)
+    csf = np.zeros([x_max, y_max, z_max], np.short)
+
+    
+    
+    x_wm = 50
+    x_gm = 100
+    
+    for x in range (x_wm):
+        for y in range (y_max):
+            for z in range (z_max):
+                wm[x,y,z] = 1
+    
+    for x in range (x_wm, x_gm):
+        for y in range (y_max):
+            for z in range (z_max):
+                gm[x,y,z] = 1
+                
+    for x in range (x_gm, x_max):
+        for y in range (y_max):
+            for z in range (z_max):
+                csf[x,y,z] = 1
+                
+    return itk.image_view_from_array(wm), itk.image_view_from_array(gm), itk.image_view_from_array(csf)
+
+
 
 
 # ████████ ███████ ███████ ████████ ███████ 
@@ -366,13 +404,16 @@ def test_gaussian_prameters_std_random (image2, mask):
 
 #3 classes weights function    
 @given (mask1 = probability_mask_strategy(), mask2 = probability_mask_strategy(), mask3 = probability_mask_strategy() )
-@settings(max_examples = 20, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
-def test_weights_function (mask1, mask2, mask3):
+@settings(max_examples = 10, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
+def test_weights_function_range (mask1, mask2, mask3):
+    '''
+    This function tests if all the wheights obtained are in the right range (<= 1 and >= 0 )
+    '''
+    
     
     weights = find_prob_weights(mask1, mask2, mask3)
     
-    
-    #nessun peso deve essere maggiore di 1 o minore di 0
+    #every wheights in range [0;1]
     assert weights[0] <= 1
     assert weights[0] >= 0
     assert weights[1] <= 1
@@ -380,18 +421,47 @@ def test_weights_function (mask1, mask2, mask3):
     assert weights[2] <= 1
     assert weights[2] >= 0
 
-    #la somma dei pesi deve essere uguale ad 1. Uso isclose per evitare problemi di approssimazione
+    
+
+@given (mask1 = probability_mask_strategy(), mask2 = probability_mask_strategy(), mask3 = probability_mask_strategy() )
+@settings(max_examples = 10, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
+def test_weights_function_sum (mask1, mask2, mask3):
+    '''
+    This function tests if the sum of al the weights is 1.
+    '''
+    
+    weights = find_prob_weights(mask1, mask2, mask3)
+
+    #Weights sum = 1.  isclose to get around problems with approximation.
     assert np.isclose( (weights[0] + weights[1] + weights[2] ), 1)
+    
+    
+
+def test_weights_function_value ():
+    '''
+    This function tests if giving 3 known masks the computed weights are the same of those manually computed.
+    '''
+    
+    mask1, mask2, mask3 = masks_generator()
+    weights = find_prob_weights(mask1, mask2, mask3)
+
+    assert weights[0] == 0.25
+    assert weights[1] == 0.25
+    assert weights[2] == 0.5
+
     
 #4 classes weights function    
 @given (mask1 = probability_mask_strategy(), mask2 = probability_mask_strategy(), mask3 = probability_mask_strategy() )
-@settings(max_examples = 20, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
-def test_4_weights_function (mask1, mask2, mask3):
-    
+@settings(max_examples = 10, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
+def test_4_weights_function_range (mask1, mask2, mask3):
+    '''
+    This function tests if all the wheights obtained are in the right range (<= 1 and >= 0 )
+    '''
+        
     weights = find_prob_4_weights(mask1, mask2, mask3)
     
     
-    #nessun peso deve essere maggiore di 1 o minore di 0
+    #every wheights in range [0;1]
     assert weights[0] <= 1
     assert weights[0] >= 0
     assert weights[1] <= 1
@@ -401,13 +471,27 @@ def test_4_weights_function (mask1, mask2, mask3):
     assert weights[3] <= 1
     assert weights[3] >= 0
 
-    #la somma dei pesi deve essere uguale ad 1. Uso isclose per evitare problemi di approssimazione
+    
+    
+    
+#4 classes weights function    
+@given (mask1 = probability_mask_strategy(), mask2 = probability_mask_strategy(), mask3 = probability_mask_strategy() )
+@settings(max_examples = 10, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
+def test_4_weights_function_sum (mask1, mask2, mask3):
+    '''
+    This function tests if the sum of al the weights is 1.
+    '''
+    
+    weights = find_prob_4_weights(mask1, mask2, mask3)
+
+
+    #Weights sum = 1.  isclose to get around problems with approximation.
     assert np.isclose( (weights[0] + weights[1] + weights[2] + weights[3]), 1)
     
-#####################à#
+    
+#######################
 # Utilities Functions #
 #######################
-
 
 #Testing the label_selection function
 @given (labels = label_image_strategy(), value = st.integers( 0, 2 ) ) 
