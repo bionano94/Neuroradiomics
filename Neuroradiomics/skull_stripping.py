@@ -1,9 +1,9 @@
 import itk
 import numpy as np
 
-from Neuroradiomics.normalization import *
+from Neuroradiomics.normalization import itk_gaussian_normalization
 from Neuroradiomics.registration import elastix_multimap_registration
-from Neuroradiomics.resampler import *
+from Neuroradiomics.resampler import match_physical_spaces
 
 
 
