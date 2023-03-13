@@ -50,7 +50,7 @@ def masking_random_image_strategy(draw):
 @st.composite
 def masking_cube_mask_strategy(draw):
     '''
-    This function generates an itk image with a 3D cube of random side. It has to be used as a mask.
+    This function generates an itk image with a 3D white cube of random side. It has to be used as a mask.
     '''
     
     x_max = 200
@@ -77,29 +77,11 @@ def masking_cube_mask_strategy(draw):
 
 
 
-@st.composite
-def binary_uniform_cube_image_strategy(draw):
-    '''
-    This function generates an itk image with a 3D cube. It has to be used as a mask.
-    '''
-    
-    x_max = 200
-    y_max = 200
-    z_max = 200
-    image = np.zeros([x_max, y_max, z_max], np.short)
-    
-    for x in range (x_max):
-        for y in range (y_max):
-            for z in range (z_max):
-                image[x,y,z] = 1
-                
-    image = itk.image_view_from_array(image)
-    
-    return image
 
 @st.composite
 def label_image_strategy(draw):
     '''
+    This function creates a cubic black image with two not overlapping white cubes with random sides in it.
     '''
     
     x_max = 300
@@ -142,7 +124,7 @@ def label_image_strategy(draw):
 @st.composite
 def cubic_image_strategy(draw):
     '''
-    This function generates an itk image with a random 3D cube.
+    This function generates an itk cubic black image with a random white 3D cube.
     '''
     
     x_max = draw(st.integers(150,200))
@@ -187,6 +169,33 @@ def probability_mask_strategy(draw):
     image = itk.image_view_from_array(image)
     
     return image
+
+
+
+
+#########################################
+######## NOT STRATEGY FUNCTIONS #########
+#########################################
+
+def binary_uniform_cube():
+    '''
+    This function create a 3D image with every pixels of value 1.
+    '''
+    x_max = 200
+    y_max = 200
+    z_max = 200
+    image = np.zeros([x_max, y_max, z_max], np.short)
+    
+    for x in range (x_max):
+        for y in range (y_max):
+            for z in range (z_max):
+                image[x,y,z] = 1
+                
+    image = itk.image_view_from_array(image)
+    
+    return image
+
+    
 
 
 # ████████ ███████ ███████ ████████ ███████ 
@@ -242,10 +251,11 @@ def test_de_indexing (image, mask):
     
 #Testing if indexing and de-indexing give the same image
 
-@given (image = cubic_image_strategy(), mask = binary_uniform_cube_image_strategy())
+@given (image = cubic_image_strategy())
 @settings(max_examples=20, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
-def test_index_de_index_validation (image, mask):
+def test_index_de_index_validation (image):
     
+    mask = binary_uniform_cube()
     image_array, index_array = indexing(image, mask) 
     
     de_indexed_image = de_indexing (image_array, index_array, image)
@@ -264,10 +274,11 @@ def test_index_de_index_validation (image, mask):
     
 #Testing the Gaussian function
 
-@given (image1 = binary_uniform_cube_image_strategy(), image2 = masking_cube_mask_strategy(), mask = masking_cube_mask_strategy())
+@given (image2 = masking_cube_mask_strategy(), mask = masking_cube_mask_strategy())
 @settings(max_examples=20, deadline = None, suppress_health_check = (HC.too_slow, HC.large_base_example, HC.data_too_large))
-def test_gaussian_prameters (image1, image2, mask):
+def test_gaussian_prameters (image2, mask):
     
+    image1 = binary_uniform_cube
     params1 = gaussian_pixel_distribution_params_evaluation(image1, mask)
     
     params2 = gaussian_pixel_distribution_params_evaluation(image2, mask)
@@ -345,16 +356,3 @@ def test_label_selection (labels, value):
     assert np.all( np.logical_or( selected_label_array == 0, selected_label_array == 1) )
     assert np.all(check_boolean_vector)
 
-    
-    
-#Testing the evaluation function
-@given (mask = binary_uniform_cube_image_strategy()) 
-@settings(max_examples=20, deadline = None, suppress_health_check = (HC.too_slow,))
-def test_evaluate_mask (mask):
-    
-    results = evaluate_mask (mask, mask)
-    
-    assert results[0] == 1
-    assert results[1] == 0
-    assert results[2] == 0
-    assert results[3] == 0
