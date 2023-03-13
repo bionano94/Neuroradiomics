@@ -196,7 +196,7 @@ def binary_uniform_cube():
     return image
 
     
-def binarym_cube_with_bg():
+def binary_cube_with_bg():
     '''
     This function create a 3D black image with a white cube in it.
     '''
@@ -368,7 +368,7 @@ def test_gaussian_prameters_mean_1 (mask):
     This function checks if obtaining the mean value of an image with every pixel has value 1 then the resulting mean is 1.
     '''
     
-    image1 = binary_uniform_cube
+    image1 = binary_uniform_cube()
     params1 = gaussian_pixel_distribution_params_evaluation(image1, mask)
         
     assert params1[0] == 1
@@ -381,7 +381,7 @@ def test_gaussian_prameters_std_1 (mask):
     This function checks if obtaining the std dev value of an image with every pixel has value 1 then the resulting std dev is 10
     '''
     
-    image1 = binary_uniform_cube
+    image1 = binary_uniform_cube()
     params1 = gaussian_pixel_distribution_params_evaluation(image1, mask)
         
     assert params1[1] == 0
@@ -424,7 +424,7 @@ def test_find_means_bg():
     Since the same image is used also as a mask for the background the means have however to be = 1.
     '''
     mask1, mask2, mask3 = masks_generator()
-    image = binarym_cube_with_bg()
+    image = binary_cube_with_bg()
     means = find_means(image, image, mask1, mask2, mask3)
     
     assert means[0] == 1
@@ -544,6 +544,7 @@ def test_label_selection_binary (labels, value):
     assert np.all( np.logical_or( selected_label_array == 0, selected_label_array == 1) )
 
 
+    
     #Testing the label_selection function
 @given (labels = label_image_strategy(), value = st.integers( 0, 2 ) ) 
 @settings(max_examples=10, deadline = None, suppress_health_check = (HC.too_slow,))
