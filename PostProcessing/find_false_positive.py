@@ -134,6 +134,8 @@ def scoring (label_img, pos_mask, neg_mask, pos_val = 1, neg_val = 1):
     score = [0] * maximum_filter.GetMaximum() #score for each lesion
     count = [0] * maximum_filter.GetMaximum() #total number of pixels for lesion
     
+    
+    #This iteration loop is necessary to get around issues with ITK wrapping in Python
     for index[0] in range( label_img.GetLargestPossibleRegion().GetSize()[0] ):
 
         for index[1] in range( label_img.GetLargestPossibleRegion().GetSize()[1] ):
@@ -197,6 +199,7 @@ def feature_scoring (label_img, masks_list):
     score = np.array( [[0.] * (len(masks_list) + 2)] * maximum_filter.GetMaximum() ) #total scores for each lesion
     count = np.array( [0.] * maximum_filter.GetMaximum() ) #total number of pixels for lesion
     
+    #This iteration loop is necessary to get around issues with ITK wrapping in Python
     for index[0] in range( label_img.GetLargestPossibleRegion().GetSize()[0] ):
 
         for index[1] in range( label_img.GetLargestPossibleRegion().GetSize()[1] ):
@@ -287,6 +290,7 @@ def find_Jaccard_truth_value (counted_label, gnd_label, threshold = 0.25):
     
     index = itk.Index[3]()
 
+    #This iteration loop is necessary to get around issues with ITK wrapping in Python
     for index[0] in range( counted_label.GetLargestPossibleRegion().GetSize()[0] ):
 
             for index[1] in range( counted_label.GetLargestPossibleRegion().GetSize()[1] ):
@@ -360,6 +364,7 @@ def find_simple_truth_value (counted_label, true_label):
     value_array = np.array( [False] * maximum_filter.GetMaximum() ) #total number of pixels for lesion
     
 
+    #This iteration loop is necessary to get around issues with ITK wrapping in Python
     for index[0] in range( counted_label.GetLargestPossibleRegion().GetSize()[0] ):
 
             for index[1] in range( counted_label.GetLargestPossibleRegion().GetSize()[1] ):
@@ -415,7 +420,8 @@ def label_killer (counted_label, surviving_array):
     final_label.Allocate()
     
     index = itk.Index[3]()
-
+    
+    #This iteration loop is necessary to get around issues with ITK wrapping in Python
     for index[0] in range( counted_label.GetLargestPossibleRegion().GetSize()[0] ):
 
             for index[1] in range( counted_label.GetLargestPossibleRegion().GetSize()[1] ):
