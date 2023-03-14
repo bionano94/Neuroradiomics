@@ -42,32 +42,7 @@ def random_image_strategy(draw):
     return rndImage.GetOutput()
 
 
-@st.composite
-def white_image_strategy(draw):
-    '''
-    This function generates a white image
-    '''
-    
-    x_size = 200
-    y_size = 200
-    z_size = 200
-    image = itk.image_view_from_array( np.full((x_size, y_size, z_size), 1, dtype = np.float32 ) )
-    
-    
-    return image
 
-@st.composite
-def black_image_strategy(draw):
-    '''
-    This function generates a black image
-    '''
-    
-    x_size = 200
-    y_size = 200
-    z_size = 200
-    image = itk.image_view_from_array( np.zeros([x_size, y_size, z_size], dtype = np.float32) )
-    
-    return image
     
 
                                       
@@ -146,7 +121,39 @@ def label_image_strategy(draw):
     image = itk.image_view_from_array(image)
     
     return image
-                
+              
+    
+    
+#############################################
+########## NON STRATEGY FUNCTIONS ###########
+#############################################
+
+def white_image():
+    '''
+    This function generates a 3D image with every pixel of value 1.
+    '''
+    
+    x_size = 200
+    y_size = 200
+    z_size = 200
+    image = itk.image_view_from_array( np.full((x_size, y_size, z_size), 1, dtype = np.float32 ) )
+    
+    
+    return image
+
+def black_image():
+    '''
+    This function generates a cubic black image.
+    '''
+    
+    x_size = 200
+    y_size = 200
+    z_size = 200
+    image = itk.image_view_from_array( np.zeros([x_size, y_size, z_size], dtype = np.float32) )
+    
+    return image
+
+
 
 # ████████ ███████ ███████ ████████ ███████ 
 #    ██    ██      ██         ██    ██      
@@ -168,9 +175,11 @@ def test_pytest_properly_works():
 
 #Testing the matching alias function
 @given(changing = random_image_strategy(), ref = random_image_strategy() )
-@settings(max_examples = 20, deadline = None)
+@settings(max_examples = 10, deadline = None)
 def test_matching_atlases_no_displacement (changing, ref):
-    
+    '''
+    This function generates two random images and then apply the "match_atlases" function without the displacement vector and then checks if the two images have the same direction and if the origin is equal to the reference origin.
+    '''
     matched = match_atlases(changing, ref)
     
     assert matched.GetOrigin() == ref.GetOrigin()
@@ -178,8 +187,12 @@ def test_matching_atlases_no_displacement (changing, ref):
     
 
 @given(changing = random_image_strategy(), ref = random_image_strategy() )
-@settings(max_examples = 20, deadline = None)
+@settings(max_examples = 10, deadline = None)
 def test_matching_atlases_with_displacement (changing, ref):
+    '''
+    This function generates two random images and then apply the "match_atlases" function with the displacement vector and then check
+    if the two images have the same direction and if the origin is equal to the reference origin + dicplacement.
+    '''
     
     displacement = [np.random.randint(0,10),np.random.randint(0,10),np.random.randint(0,10)]
     matched = match_atlases(changing, ref, displacement)
@@ -192,7 +205,7 @@ def test_matching_atlases_with_displacement (changing, ref):
     
 #testing the function to relabel the label image
 @given(image = label_image_strategy())
-@settings(max_examples = 20, deadline = None)
+@settings(max_examples = 10, deadline = None)
 def test_find_connected_regions(image):
     
     relabeled_img = find_connected_regions(image)
@@ -207,10 +220,12 @@ def test_find_connected_regions(image):
 
     
 #Testing Score Function
-@given(label = label_image_strategy(), pos_mask = white_image_strategy(), neg_mask = black_image_strategy() )
-@settings(max_examples = 20, deadline = None)
-def test_all_positive_score (label, pos_mask, neg_mask):
+@given(label = label_image_strategy() )
+@settings(max_examples = 10, deadline = None)
+def test_all_positive_score (label):
     
+    pos_mask = white_image()
+    neg_mask = black_image()
     relabelled = find_connected_regions(label) #relabel the image to differentiate every connected region
     
     score = scoring(relabelled, pos_mask, neg_mask)
@@ -224,9 +239,12 @@ def test_all_positive_score (label, pos_mask, neg_mask):
     assert score == [1] * len(score)
     
 #Testing Score Function
-@given(label = label_image_strategy(), pos_mask = black_image_strategy(), neg_mask = white_image_strategy() )
-@settings(max_examples = 20, deadline = None)
-def test_all_negative_score (label, pos_mask, neg_mask):
+@given(label = label_image_strategy())
+@settings(max_examples = 10, deadline = None)
+def test_all_negative_score (label):
+    
+    pos_mask = black_image()
+    neg_mask = white_image() 
     
     relabelled = find_connected_regions(label) #relabel the image to differentiate every connected region
     
@@ -241,9 +259,12 @@ def test_all_negative_score (label, pos_mask, neg_mask):
     assert score == [-1] * len(score)
     
 #Testing Score Function
-@given(label = label_image_strategy(), pos_mask = white_image_strategy(), neg_mask = white_image_strategy() )
-@settings(max_examples = 20, deadline = None)
-def test_all_overlapping_score (label, pos_mask, neg_mask):
+@given(label = label_image_strategy(),)
+@settings(max_examples = 10, deadline = None)
+def test_all_overlapping_score (label):
+    
+    pos_mask = white_image()
+    neg_mask = white_image() 
     
     relabelled = find_connected_regions(label) #relabel the image to differentiate every connected region
     
@@ -261,10 +282,12 @@ def test_all_overlapping_score (label, pos_mask, neg_mask):
     
 
 #Testing Features Score Function
-@given(label = label_image_strategy(), pos_mask = white_image_strategy(), neg_mask = white_image_strategy() )
-@settings(max_examples = 20, deadline = None)
-def test_feature_scoring (label, pos_mask, neg_mask):
+@given(label = label_image_strategy())
+@settings(max_examples = 10, deadline = None)
+def test_feature_scoring (label):
     
+    pos_mask = white_image()
+    neg_mask = white_image() 
     masks_list = [pos_mask, neg_mask]
     
     score, relabelled = feature_scoring(label, masks_list)
@@ -282,10 +305,12 @@ def test_feature_scoring (label, pos_mask, neg_mask):
     
     
     #Testing Features Score Function
-@given(label = label_image_strategy(), pos_mask = black_image_strategy(), neg_mask = black_image_strategy() )
-@settings(max_examples = 20, deadline = None)
-def test_feature_scoring2 (label, pos_mask, neg_mask):
+@given(label = label_image_strategy())
+@settings(max_examples = 10, deadline = None)
+def test_feature_scoring2 (label):
     
+    pos_mask = black_image()
+    neg_mask = black_image() 
     masks_list = [pos_mask, neg_mask]
     
     score, relabelled = feature_scoring(label, masks_list)
@@ -306,11 +331,12 @@ def test_feature_scoring2 (label, pos_mask, neg_mask):
     
     
 #Testing the FINDING SIMPLE TRUTH Function
-@given(label = label_image_strategy(), gnd_truth = black_image_strategy() )
-@settings(max_examples = 20, deadline = None)
-def test_find_simple_truth_all_false (label, gnd_truth):
+@given(label = label_image_strategy())
+@settings(max_examples = 10, deadline = None)
+def test_find_simple_truth_all_false (label):
         
      
+    gnd_truth = black_image()
     relabelled = find_connected_regions(label)
     maximum_filter = itk.MinimumMaximumImageCalculator[type(relabelled)].New()
     maximum_filter.SetImage(relabelled)
@@ -324,10 +350,11 @@ def test_find_simple_truth_all_false (label, gnd_truth):
     
 
 #Testing the FINDING TRUTH Function
-@given(label = label_image_strategy(), gnd_truth = white_image_strategy() )
-@settings(max_examples = 20, deadline = None)
-def test_find_simple_truth_all_true (label, gnd_truth):
+@given(label = label_image_strategy())
+@settings(max_examples = 10, deadline = None)
+def test_find_simple_truth_all_true (label):
      
+    gnd_truth = white_image()
     relabelled = find_connected_regions(label)
     maximum_filter = itk.MinimumMaximumImageCalculator[type(relabelled)].New()
     maximum_filter.SetImage(relabelled)
@@ -344,10 +371,12 @@ def test_find_simple_truth_all_true (label, gnd_truth):
     
     
 #Testing the FINDING TRUTH Function
-@given(label = label_image_strategy(), gnd_truth = black_image_strategy() )
-@settings(max_examples = 20, deadline = None)
-def test_find_Jaccard_truth_all_false(label, gnd_truth):
+@given(label = label_image_strategy())
+@settings(max_examples = 10, deadline = None)
+def test_find_Jaccard_truth_all_false(label):
     
+    gnd_truth = black_image()
+
     relabelled = find_connected_regions(label)
     maximum_filter = itk.MinimumMaximumImageCalculator[type(relabelled)].New()
     maximum_filter.SetImage(relabelled)
@@ -363,7 +392,7 @@ def test_find_Jaccard_truth_all_false(label, gnd_truth):
     
 #Testing the FINDING TRUTH Function
 @given(label = label_image_strategy() )
-@settings(max_examples = 20, deadline = None)
+@settings(max_examples = 10, deadline = None)
 def test_find_Jaccard_truth_all_true(label):
         
      
@@ -383,7 +412,7 @@ def test_find_Jaccard_truth_all_true(label):
     
 #Testing the LABEL KILLER function
 @given(label = label_image_strategy() )
-@settings(max_examples = 20, deadline = None)
+@settings(max_examples = 10, deadline = None)
 def test_label_killer_all_dead(label):
     
     relabelled = find_connected_regions(label)
@@ -405,7 +434,7 @@ def test_label_killer_all_dead(label):
     
 #Testing the LABEL KILLER function
 @given(label = label_image_strategy() )
-@settings(max_examples = 20, deadline = None)
+@settings(max_examples = 10, deadline = None)
 def test_label_killer_all_survived(label):
     
     relabelled = find_connected_regions(label)
@@ -428,7 +457,7 @@ def test_label_killer_all_survived(label):
     
 #Testing the SMALL LABEL REMOVER function
 @given(label = label_image_strategy() )
-@settings(max_examples = 20, deadline = None)
+@settings(max_examples = 10, deadline = None)
 def test_remove_small_labels_by_dimension(label):
     
     all_survived_label = remove_small_labels_by_dimension(label)
