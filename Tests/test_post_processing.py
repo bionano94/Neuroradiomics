@@ -207,6 +207,10 @@ def test_matching_atlases_with_displacement (changing, ref):
 @given(image = label_image_strategy())
 @settings(max_examples = 10, deadline = None)
 def test_find_connected_regions(image):
+    '''
+    This function take as input an image with 8 disconnected regions of pixel values = 1 and check if the find_connected_regions
+    relabel every region just findind that the final max pixel value is = 8.
+    '''
     
     relabeled_img = find_connected_regions(image)
     
@@ -223,6 +227,9 @@ def test_find_connected_regions(image):
 @given(label = label_image_strategy() )
 @settings(max_examples = 10, deadline = None)
 def test_all_positive_score (label):
+    '''
+    This function checks if givin as masks for the scoring function an image with every pixel =1 (pos_mask) and a black image (neg_mask) the score is 1.
+    '''
     
     pos_mask = white_image()
     neg_mask = black_image()
@@ -242,6 +249,9 @@ def test_all_positive_score (label):
 @given(label = label_image_strategy())
 @settings(max_examples = 10, deadline = None)
 def test_all_negative_score (label):
+    '''
+    This function checks if giving as masks for the scoring function an image with every pixel = 0 (pos_mask) and an image with every pixel =1 (neg_mask) the score is -1 for every label.
+    '''
     
     pos_mask = black_image()
     neg_mask = white_image() 
@@ -262,6 +272,9 @@ def test_all_negative_score (label):
 @given(label = label_image_strategy(),)
 @settings(max_examples = 10, deadline = None)
 def test_all_overlapping_score (label):
+    '''
+    This function checks if giving as masks for the scoring function two images with every pixel = 1 (pos_mask and neg_mask) the final score for every label is 0.
+    '''
     
     pos_mask = white_image()
     neg_mask = white_image() 
@@ -285,7 +298,9 @@ def test_all_overlapping_score (label):
 @given(label = label_image_strategy())
 @settings(max_examples = 10, deadline = None)
 def test_feature_scoring (label):
+    '''
     
+    '''
     pos_mask = white_image()
     neg_mask = white_image() 
     masks_list = [pos_mask, neg_mask]
@@ -458,9 +473,25 @@ def test_label_killer_all_survived(label):
 #Testing the SMALL LABEL REMOVER function
 @given(label = label_image_strategy() )
 @settings(max_examples = 10, deadline = None)
-def test_remove_small_labels_by_dimension(label):
+def test_remove_small_labels_by_dimension_survivor(label):
+    '''
+    This function checks if applying the small-labels-remover function with minimum pixel dimension = 1 to an image the output image is equal to the input ones.
+    '''
     
     all_survived_label = remove_small_labels_by_dimension(label)
+ 
+    
+    
+    assert np.all(np.isclose( itk.GetArrayFromImage(label), itk.GetArrayFromImage(all_survived_label), 1e-3, 1e-2 ) )
+    
+    
+@given(label = label_image_strategy() )
+@settings(max_examples = 10, deadline = None)
+def test_remove_small_labels_by_dimension_killed(label):
+    '''
+    This function checks if applying the small-labels-remover function with minimum pixel dimension grater than every possible object in the image the output image is totally black.
+    '''
+    
     all_killed_label = remove_small_labels_by_dimension(label, 27001)
     
     relabeled_img = find_connected_regions(all_killed_label)
@@ -471,5 +502,4 @@ def test_remove_small_labels_by_dimension(label):
     maximum_filter.ComputeMaximum()
     
     
-    assert np.all(np.isclose( itk.GetArrayFromImage(label), itk.GetArrayFromImage(all_survived_label), 1e-3, 1e-2 ) )
     assert maximum_filter.GetMaximum() == 0
