@@ -299,7 +299,7 @@ def test_all_overlapping_score (label):
 @settings(max_examples = 10, deadline = None)
 def test_feature_scoring (label):
     '''
-    
+    This function checks the feature score function giving two white masks at the feature scoring function for a label image where every pixel has value 1 and tests if the score associated with those features is 1.
     '''
     pos_mask = white_image()
     neg_mask = white_image() 
@@ -323,7 +323,9 @@ def test_feature_scoring (label):
 @given(label = label_image_strategy())
 @settings(max_examples = 10, deadline = None)
 def test_feature_scoring2 (label):
-    
+    '''
+    This function checks the feature score function giving two black masks at the feature scoring function for a label image where every pixel has value 1 and tests if the score associated with those features is 1 for the average pixel value and 0 for the masks overlapping.
+    '''
     pos_mask = black_image()
     neg_mask = black_image() 
     masks_list = [pos_mask, neg_mask]
@@ -349,7 +351,9 @@ def test_feature_scoring2 (label):
 @given(label = label_image_strategy())
 @settings(max_examples = 10, deadline = None)
 def test_find_simple_truth_all_false (label):
-        
+    '''
+    This function checks the simple_truth function giving a black image as a mask and then checking that each label is considered false.
+    '''
      
     gnd_truth = black_image()
     relabelled = find_connected_regions(label)
@@ -368,6 +372,9 @@ def test_find_simple_truth_all_false (label):
 @given(label = label_image_strategy())
 @settings(max_examples = 10, deadline = None)
 def test_find_simple_truth_all_true (label):
+    '''
+    This function checks the simple_truth function giving an image with every pixel of value 1 as a mask and then checking that each label is considered true.
+    '''
      
     gnd_truth = white_image()
     relabelled = find_connected_regions(label)
@@ -389,7 +396,9 @@ def test_find_simple_truth_all_true (label):
 @given(label = label_image_strategy())
 @settings(max_examples = 10, deadline = None)
 def test_find_Jaccard_truth_all_false(label):
-    
+    '''
+    This function checks the Jaccard_truth function giving a black image as a mask and then checking that each label is considered false and the modified Jaccard index for each label is 0.
+    '''
     gnd_truth = black_image()
 
     relabelled = find_connected_regions(label)
@@ -409,6 +418,9 @@ def test_find_Jaccard_truth_all_false(label):
 @given(label = label_image_strategy() )
 @settings(max_examples = 10, deadline = None)
 def test_find_Jaccard_truth_all_true(label):
+    '''
+    This function checks the Jaccard_truth function giving an image with every pixel of value 1 as a mask and then checking that each label is considered true and the modified Jaccard index for each label is 1.
+    '''
         
      
     relabelled = find_connected_regions(label)
@@ -429,6 +441,9 @@ def test_find_Jaccard_truth_all_true(label):
 @given(label = label_image_strategy() )
 @settings(max_examples = 10, deadline = None)
 def test_label_killer_all_dead(label):
+    '''
+    This function checks the proper funcionlity of the label_kiler function setting all labels as False and then checking that every label was deleted giving in output a black image with the same attributes of the one given as input.
+    '''
     
     relabelled = find_connected_regions(label)
     maximum_filter = itk.MinimumMaximumImageCalculator[type(relabelled)].New()
@@ -451,6 +466,9 @@ def test_label_killer_all_dead(label):
 @given(label = label_image_strategy() )
 @settings(max_examples = 10, deadline = None)
 def test_label_killer_all_survived(label):
+    '''
+    This function checks the proper funcionlity of the label_kiler function setting all labels as True and then checking that every label was keeped giving in output the same image given in input with also the same attributes.
+    '''
     
     relabelled = find_connected_regions(label)
     maximum_filter = itk.MinimumMaximumImageCalculator[type(relabelled)].New()
